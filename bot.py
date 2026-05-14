@@ -10,7 +10,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Settings Database
+# Settings
 conn = sqlite3.connect("config.db")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)''')
@@ -28,15 +28,10 @@ def set_setting(key, value):
 @bot.event
 async def on_ready():
     print(f"✅ Ticket Zick is online as {bot.user}")
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} commands")
-    except Exception as e:
-        print(e)
 
 @bot.tree.command(name="newticket", description="Create a new ticket")
 async def newticket(interaction: discord.Interaction):
-    await interaction.response.send_message("✅ Creating ticket...", ephemeral=True)
+    await interaction.response.send_message("✅ Creating your ticket...", ephemeral=True)
 
     try:
         category_id = get_setting("ticket_category")
@@ -54,17 +49,17 @@ async def newticket(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f"✅ Ticket created! {channel.mention}")
         
     except Exception as e:
-        await interaction.edit_original_response(content="❌ Error creating ticket.")
+        await interaction.edit_original_response(content="❌ Failed to create ticket.")
 
-@bot.tree.command(name="setcategory", description="Set the category where tickets are created")
+@bot.tree.command(name="setcategory", description="Set ticket category (Admin only)")
 @app_commands.default_permissions(administrator=True)
 async def setcategory(interaction: discord.Interaction, category_id: str):
     set_setting("ticket_category", category_id)
-    await interaction.response.send_message(f"✅ Tickets will now be created in category ID: **{category_id}**", ephemeral=True)
+    await interaction.response.send_message(f"✅ Tickets will now be created in category: **{category_id}**", ephemeral=True)
 
-@bot.tree.command(name="setup", description="Show setup info")
+@bot.tree.command(name="setup", description="Setup instructions")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
-    await interaction.response.send_message("Use `/newticket` to create tickets.\nUse `/setcategory <id>` to set ticket category.")
+    await interaction.response.send_message("**Commands:**\n• `/newticket` - Create ticket\n• `/setcategory <id>` - Set ticket category")
 
 bot.run(os.getenv("TOKEN"))
