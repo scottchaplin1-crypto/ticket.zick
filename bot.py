@@ -10,7 +10,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Database
 conn = sqlite3.connect("tickets.db")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS tickets (
@@ -25,22 +24,22 @@ conn.commit()
 @bot.event
 async def on_ready():
     print(f"✅ Ticket Zick is online as {bot.user}")
+    bot.add_view(TicketView())  # Important for persistent buttons
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
     except Exception as e:
         print(e)
 
-# Persistent View
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️", custom_id="create_ticket_button")
+    @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️", custom_id="create_ticket")
     async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(TicketModal())
 
-class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
+class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
     ticket_type = discord.ui.Select(
         placeholder="Select ticket type...",
         options=[
@@ -66,29 +65,24 @@ class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
         await channel.set_permissions(guild.default_role, read_messages=False)
         await channel.set_permissions(user, read_messages=True, send_messages=True)
 
-        embed = discord.Embed(
-            title=f"New {self.ticket_type.values[0].title()} Ticket",
-            color=0x00ff88
-        )
-        embed.add_field(name="User", value=user.mention, inline=False)
-        embed.add_field(name="Reason", value=self.reason.value, inline=False)
+        embed = discord.Embed(title=f"New {self.ticket_type.values[0].title()} Ticket", color=0x00ff88)
+        embed.add_field(name="User", value=user.mention)
+        embed.add_field(name="Reason", value=self.reason.value)
 
         await channel.send(f"{user.mention}", embed=embed)
 
         await interaction.followup.send(f"✅ Ticket created! {channel.mention}", ephemeral=True)
 
-# Setup Command
-@bot.tree.command(name="setup", description="Create the ticket panel")
+@bot.tree.command(name="setup", description="Create ticket panel")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎟️ Ticket Zick Support",
-        description="Click the button below to open a ticket.",
+        description="Click below to open a ticket.",
         color=0x00ffff
     )
-    
     view = TicketView()
     await interaction.channel.send(embed=embed, view=view)
-    await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
+    await interaction.response.send_message("✅ Panel created!", ephemeral=True)
 
 bot.run(os.getenv("TOKEN"))
