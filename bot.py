@@ -2,12 +2,26 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
+import sqlite3
+from datetime import datetime
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Database
+conn = sqlite3.connect("tickets.db")
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS tickets (
+    channel_id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    guild_id INTEGER,
+    ticket_type TEXT,
+    opened_at TEXT
+)''')
+conn.commit()
 
 @bot.event
 async def on_ready():
@@ -18,12 +32,12 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-@bot.tree.command(name="setup", description="Create the Ticket Panel")
+@bot.tree.command(name="setup", description="Create the main ticket panel")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎟️ Ticket Zick Support",
-        description="Click the button below to create a ticket.",
+        description="Click the button below to open a ticket.\nOur team will respond as soon as possible.",
         color=0x00ffff
     )
     
@@ -31,12 +45,47 @@ async def setup(interaction: discord.Interaction):
     button = discord.ui.Button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
     
     async def create_ticket(inter: discord.Interaction):
-        await inter.response.send_message("✅ Ticket system coming soon...", ephemeral=True)
+        await inter.response.send_modal(TicketModal())
     
     button.callback = create_ticket
     view.add_item(button)
     
     await interaction.channel.send(embed=embed, view=view)
     await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
+
+class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
+    ticket_type = discord.ui.Select(
+        placeholder="Choose ticket type...",
+        options=[
+            discord.SelectOption(label="General Support", value="support", emoji="🛠️"),
+            discord.SelectOption(label="Player Report", value="report", emoji="🚨"),
+            discord.SelectOption(label="Ban Appeal", value="appeal", emoji="⚖️"),
+            discord.SelectOption(label="Other", value="other", emoji="❓"),
+        ]
+    )
+    reason = discord.ui.TextInput(label="Please describe your issue", style=discord.TextStyle.paragraph, required=True, max_length=1000)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        # Create ticket channel (you can customize this later)
+        guild = interaction.guild
+        user = interaction.user
+        
+        channel = await guild.create_text_channel(
+            name=f"ticket-{user.name}",
+            topic=f"Ticket by {user} | Type: {self.ticket_type.values[0]}"
+        )
+
+        await channel.set_permissions(guild.default_role, read_messages=False)
+        await channel.set_permissions(user, read_messages=True, send_messages=True)
+
+        embed = discord.Embed(title=f"New {self.ticket_type.values[0].title()} Ticket", color=0x00ff00)
+        embed.add_field(name="User", value=user.mention, inline=False)
+        embed.add_field(name="Reason", value=self.reason.value, inline=False)
+
+        await channel.send(f"{user.mention} | Ticket created!", embed=embed)
+
+        await interaction.followup.send(f"✅ Your ticket has been created! {channel.mention}", ephemeral=True)
 
 bot.run(os.getenv("TOKEN"))
