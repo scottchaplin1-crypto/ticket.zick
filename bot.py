@@ -3,7 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 import os
 import sqlite3
-from datetime import datetime
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -11,7 +10,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Database
 conn = sqlite3.connect("tickets.db")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS tickets (
@@ -32,25 +30,15 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# ====================== SETUP COMMAND ======================
-@bot.tree.command(name="setup", description="Create the main ticket panel")
-@app_commands.default_permissions(administrator=True)
-async def setup(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="🎟️ Ticket Zick Support",
-        description="Click the button below to open a ticket.",
-        color=0x00ffff
-    )
-    
-    view = discord.ui.View(timeout=None)
-    button = discord.ui.Button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
-    button.callback = lambda i: create_ticket_callback(i)
-    view.add_item(button)
-    
-    await interaction.channel.send(embed=embed, view=view)
-    await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
+# ====================== TICKET VIEW ======================
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
 
-# ====================== TICKET MODAL ======================
+    @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
+    async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(TicketModal())
+
 class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
     ticket_type = discord.ui.Select(
         placeholder="Select ticket type...",
@@ -86,10 +74,20 @@ class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
 
         await channel.send(f"{user.mention}", embed=embed)
 
-        await interaction.followup.send(f"✅ Ticket created! {channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"✅ Your ticket has been created! {channel.mention}", ephemeral=True)
 
-# Button callback
-async def create_ticket_callback(interaction: discord.Interaction):
-    await interaction.response.send_modal(TicketModal())
+# ====================== SETUP COMMAND ======================
+@bot.tree.command(name="setup", description="Create the main ticket panel")
+@app_commands.default_permissions(administrator=True)
+async def setup(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🎟️ Ticket Zick Support",
+        description="Click the button below to open a ticket.",
+        color=0x00ffff
+    )
+    
+    view = TicketView()
+    await interaction.channel.send(embed=embed, view=view)
+    await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
 
 bot.run(os.getenv("TOKEN"))
