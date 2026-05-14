@@ -2,12 +2,28 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
+import sqlite3
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Settings Database
+conn = sqlite3.connect("config.db")
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)''')
+conn.commit()
+
+def get_setting(key, default=None):
+    c.execute("SELECT value FROM settings WHERE key = ?", (key,))
+    result = c.fetchone()
+    return result[0] if result else default
+
+def set_setting(key, value):
+    c.execute("REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
+    conn.commit()
 
 @bot.event
 async def on_ready():
@@ -20,10 +36,16 @@ async def on_ready():
 
 @bot.tree.command(name="newticket", description="Create a new ticket")
 async def newticket(interaction: discord.Interaction):
-    await interaction.response.send_message("✅ Creating your ticket channel...", ephemeral=True)
+    await interaction.response.send_message("✅ Creating your ticket...", ephemeral=True)
 
     try:
-        channel = await interaction.guild.create_text_channel(f"ticket-{interaction.user.name}")
+        category_id = get_setting("ticket_category")
+        category = discord.utils.get(interaction.guild.categories, id=int(category_id)) if category_id else None
+
+        channel = await interaction.guild.create_text_channel(
+            name=f"ticket-{interaction.user.name}",
+            category=category
+        )
         
         await channel.set_permissions(interaction.guild.default_role, read_messages=False)
         await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
@@ -33,9 +55,15 @@ async def newticket(interaction: discord.Interaction):
     except Exception as e:
         await interaction.edit_original_response(content="❌ Failed to create ticket.")
 
-@bot.tree.command(name="setup", description="Setup info")
+@bot.tree.command(name="setcategory", description="Set category for new tickets (Admin only)")
+@app_commands.default_permissions(administrator=True)
+async def setcategory(interaction: discord.Interaction, category_id: str):
+    set_setting("ticket_category", category_id)
+    await interaction.response.send_message(f"✅ Tickets will now be created in category ID: **{category_id}**", ephemeral=True)
+
+@bot.tree.command(name="setup", description="Show commands")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
-    await interaction.response.send_message("Use `/newticket` to create a ticket.")
+    await interaction.response.send_message("**Commands:**\n• `/newticket` → Create ticket\n• `/setcategory <id>` → Set ticket category")
 
 bot.run(os.getenv("TOKEN"))
