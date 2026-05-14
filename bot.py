@@ -51,23 +51,20 @@ class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
         await channel.send(f"{user.mention}", embed=embed)
         await interaction.followup.send(f"✅ Ticket created! {channel.mention}", ephemeral=True)
 
-# Simple Setup Command (No persistent view issues)
-@bot.tree.command(name="setup", description="Create ticket panel")
+# New Ticket Command
+@bot.tree.command(name="newticket", description="Open a new support ticket")
+async def newticket(interaction: discord.Interaction):
+    await interaction.response.send_modal(TicketModal())
+
+# Setup Panel Command
+@bot.tree.command(name="setup", description="Create the ticket panel")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎟️ Ticket Zick Support",
-        description="Click the button below to open a ticket.",
+        description="Use `/newticket` to create a ticket.",
         color=0x00ffff
     )
-    
-    class SimpleTicketView(discord.ui.View):
-        @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
-        async def create(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.send_modal(TicketModal())
-
-    view = SimpleTicketView()
-    await interaction.channel.send(embed=embed, view=view)
-    await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 bot.run(os.getenv("TOKEN"))
