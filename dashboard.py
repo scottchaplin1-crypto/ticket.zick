@@ -6,9 +6,9 @@ app = Flask(__name__)
 def home():
     return """
     <h1>🎟️ Ticket Zick Dashboard</h1>
-    <h2>✅ Success! Dashboard is Working</h2>
-    <p>This is a very basic version.</p>
-    <p>We'll add the full panel management soon.</p>
+    <h2>✅ Dashboard is Working!</h2>
+    <p>This is the starting point.</p>
+    <p>We'll build the full management system from here.</p>
     """
 
 if __name__ == "__main__":
