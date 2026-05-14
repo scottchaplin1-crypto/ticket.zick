@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
-import sqlite3
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -19,7 +18,6 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# Simple Ticket Modal
 class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
     ticket_type = discord.ui.Select(
         placeholder="Select ticket type...",
@@ -53,7 +51,7 @@ class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
         await channel.send(f"{user.mention}", embed=embed)
         await interaction.followup.send(f"✅ Ticket created! {channel.mention}", ephemeral=True)
 
-# Setup Command
+# Simple Setup Command (No persistent view issues)
 @bot.tree.command(name="setup", description="Create ticket panel")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
@@ -63,13 +61,13 @@ async def setup(interaction: discord.Interaction):
         color=0x00ffff
     )
     
-    class SimpleView(discord.ui.View):
+    class SimpleTicketView(discord.ui.View):
         @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
         async def create(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.send_modal(TicketModal())
 
-    view = SimpleView()
+    view = SimpleTicketView()
     await interaction.channel.send(embed=embed, view=view)
-    await interaction.response.send_message("✅ Panel created!", ephemeral=True)
+    await interaction.response.send_message("✅ Ticket panel created!", ephemeral=True)
 
 bot.run(os.getenv("TOKEN"))
