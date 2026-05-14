@@ -1,5 +1,4 @@
 discord.py
 flask
-python-dotenv
-aiofiles
 gunicorn
+sqlite3
