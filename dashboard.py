@@ -5,15 +5,10 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return """
-    <!DOCTYPE html>
-    <html>
-    <head><title>Ticket Zick Dashboard</title></head>
-    <body>
-        <h1>🎟️ Ticket Zick Dashboard</h1>
-        <h2>✅ Dashboard is Online!</h2>
-        <p>Full management panel coming soon...</p>
-    </body>
-    </html>
+    <h1>🎟️ Ticket Zick Dashboard</h1>
+    <h2>✅ Success! Dashboard is Working</h2>
+    <p>This is a very basic version.</p>
+    <p>We'll add the full panel management soon.</p>
     """
 
 if __name__ == "__main__":
