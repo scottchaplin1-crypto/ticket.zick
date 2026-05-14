@@ -2,12 +2,24 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import os
+import sqlite3
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Database for settings
+conn = sqlite3.connect("config.db")
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)''')
+conn.commit()
+
+def get_setting(key, default=None):
+    c.execute("SELECT value FROM settings WHERE key = ?", (key,))
+    result = c.fetchone()
+    return result[0] if result else default
 
 @bot.event
 async def on_ready():
@@ -18,26 +30,37 @@ async def on_ready():
     except Exception as e:
         print("Sync error:", e)
 
-@bot.tree.command(name="newticket", description="Open a new ticket")
+@bot.tree.command(name="newticket", description="Create a new ticket")
 async def newticket(interaction: discord.Interaction):
-    await interaction.response.send_message("✅ Ticket system is working! Channel will be created soon...", ephemeral=True)
-    
-    # Simple channel creation
-    guild = interaction.guild
-    user = interaction.user
-    channel = await guild.create_text_channel(name=f"ticket-{user.name}")
-    
-    await channel.set_permissions(guild.default_role, read_messages=False)
-    await channel.set_permissions(user, read_messages=True, send_messages=True)
-    
-    await channel.send(f"{user.mention} Welcome to your ticket!")
+    await interaction.response.send_message("✅ Creating your ticket...", ephemeral=True)
+
+    try:
+        category_id = get_setting("ticket_category")
+        category = discord.utils.get(interaction.guild.categories, id=int(category_id)) if category_id else None
+
+        channel = await interaction.guild.create_text_channel(
+            name=f"ticket-{interaction.user.name}",
+            category=category,
+            topic=f"Ticket by {interaction.user} | Created at {discord.utils.utcnow()}"
+        )
+        
+        await channel.set_permissions(interaction.guild.default_role, read_messages=False)
+        await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
+
+        await channel.send(f"👋 {interaction.user.mention} Welcome to your ticket!\nStaff will be here soon.")
+
+        await interaction.edit_original_response(content=f"✅ Ticket created! {channel.mention}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        await interaction.edit_original_response(content="❌ Failed to create ticket.")
 
 @bot.tree.command(name="setup", description="Show ticket info")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎟️ Ticket Zick",
-        description="Use `/newticket` to create a ticket.",
+        description="Use `/newticket` to create a ticket.\nUse the dashboard to configure settings.",
         color=0x00ffff
     )
     await interaction.response.send_message(embed=embed)
