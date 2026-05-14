@@ -10,6 +10,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Database
 conn = sqlite3.connect("tickets.db")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS tickets (
@@ -30,16 +31,16 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# ====================== TICKET VIEW ======================
+# Persistent View
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️")
+    @discord.ui.button(label="Create Ticket", style=discord.ButtonStyle.primary, emoji="🎟️", custom_id="create_ticket_button")
     async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(TicketModal())
 
-class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
+class TicketModal(discord.ui.Modal, title="🎟️ Open a New Ticket"):
     ticket_type = discord.ui.Select(
         placeholder="Select ticket type...",
         options=[
@@ -66,7 +67,7 @@ class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
         await channel.set_permissions(user, read_messages=True, send_messages=True)
 
         embed = discord.Embed(
-            title=f"🎟️ New {self.ticket_type.values[0].title()} Ticket",
+            title=f"New {self.ticket_type.values[0].title()} Ticket",
             color=0x00ff88
         )
         embed.add_field(name="User", value=user.mention, inline=False)
@@ -74,10 +75,10 @@ class TicketModal(discord.ui.Modal, title="Open a New Ticket"):
 
         await channel.send(f"{user.mention}", embed=embed)
 
-        await interaction.followup.send(f"✅ Your ticket has been created! {channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"✅ Ticket created! {channel.mention}", ephemeral=True)
 
-# ====================== SETUP COMMAND ======================
-@bot.tree.command(name="setup", description="Create the main ticket panel")
+# Setup Command
+@bot.tree.command(name="setup", description="Create the ticket panel")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(
