@@ -14,26 +14,22 @@ def home():
     c.execute("SELECT key, value FROM settings")
     settings = dict(c.fetchall())
     
-    return f"""
+    html = """
     <h1>🎟️ Ticket Zick Dashboard</h1>
-    <h2>Settings</h2>
+    <h2>Configure Ticket Category</h2>
     <form method="POST" action="/update">
-        <p><b>Ticket Category ID:</b> <input type="text" name="ticket_category" value="{settings.get('ticket_category', '')}" placeholder="e.g. 123456789"></p>
-        <button type="submit">Save Settings</button>
+        <p>Ticket Category ID: <input type="text" name="ticket_category" value="{}" placeholder="Paste Category ID here"></p>
+        <button type="submit">Save</button>
     </form>
-    <p><a href="/raw">View Raw Settings</a></p>
-    """
+    """.format(settings.get('ticket_category', ''))
+    
+    return html
 
 @app.route("/update", methods=["POST"])
 def update():
     c.execute("REPLACE INTO settings (key, value) VALUES (?, ?)", ("ticket_category", request.form.get("ticket_category")))
     conn.commit()
     return redirect("/")
-
-@app.route("/raw")
-def raw():
-    c.execute("SELECT key, value FROM settings")
-    return str(dict(c.fetchall()))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
