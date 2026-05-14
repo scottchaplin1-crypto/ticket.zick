@@ -33,7 +33,7 @@ async def newticket(interaction: discord.Interaction):
     except Exception as e:
         await interaction.edit_original_response(content="❌ Failed to create ticket.")
 
-@bot.tree.command(name="setup", description="Setup ticket system")
+@bot.tree.command(name="setup", description="Setup info")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     await interaction.response.send_message("Use `/newticket` to create a ticket.")
