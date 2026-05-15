@@ -44,8 +44,6 @@ async def on_ready():
     except Exception as e:
         print("Sync error:", e)
 
-# ==================== COMMANDS ====================
-
 @bot.tree.command(name="newticket", description="Create a new ticket")
 async def newticket(interaction: discord.Interaction):
     await interaction.response.send_message("✅ Creating your ticket...", ephemeral=True)
@@ -68,7 +66,7 @@ async def newticket(interaction: discord.Interaction):
     except Exception as e:
         await interaction.edit_original_response(content="❌ Failed to create ticket.")
 
-@bot.tree.command(name="setcategory", description="Set category for new tickets (Admin only)")
+@bot.tree.command(name="setcategory", description="Set category for new tickets")
 @app_commands.default_permissions(administrator=True)
 async def setcategory(interaction: discord.Interaction, category_id: str):
     guild_id = str(interaction.guild.id)
@@ -78,11 +76,6 @@ async def setcategory(interaction: discord.Interaction, category_id: str):
 @bot.tree.command(name="setup", description="Show commands")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "**Ticket Zick Commands:**\n"
-        "• `/newticket` → Create a new ticket\n"
-        "• `/setcategory <id>` → Set default ticket category", 
-        ephemeral=True
-    )
+    await interaction.response.send_message("**Ticket Zick is ready!**\nUse `/newticket` to create tickets.", ephemeral=True)
 
 bot.run(os.getenv("TOKEN"))
