@@ -46,9 +46,13 @@ router.get("/discord/callback", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    // sameSite: "none" + secure: true is required because the dashboard and this
+    // server live on different Render URLs — the browser treats that as "cross-site",
+    // and blocks the login cookie by default unless we explicitly allow it.
     res.cookie("tz_token", jwtToken, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "none",
+      secure: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
