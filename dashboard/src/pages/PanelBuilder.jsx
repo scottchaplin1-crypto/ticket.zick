@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, Ticket, Trash2, Palette, MousePointerClick, Settings2, FileText, Info, AtSign, ListChecks, GripVertical } from "lucide-react";
+import { Plus, Ticket, Trash2, Palette, MousePointerClick, Settings2, FileText, Info, AtSign, ListChecks } from "lucide-react";
 import { api } from "../api/client.js";
 import Card from "../components/Card.jsx";
 import Tooltip from "../components/Tooltip.jsx";
@@ -255,31 +255,32 @@ export default function PanelBuilder({ guildId }) {
                 {form.questionsEnabled && (
                   <div className="space-y-3 pt-1">
                     {form.questions.map((q, i) => (
-                      <div key={q.id} className="bg-surface3 rounded-lg p-3 space-y-2 border border-white/5">
-                        <div className="flex items-center gap-2">
-                          <GripVertical size={14} className="text-gray-600 shrink-0" />
-                          <span className="text-xs text-gray-500 shrink-0">Question {i + 1}</span>
-                          <input
-                            className="input h-8 text-sm flex-1"
-                            placeholder="e.g. What's your in-game username?"
-                            value={q.label}
-                            onChange={(e) => updateQuestion(q.id, "label", e.target.value)}
-                            maxLength={45}
-                          />
-                          <button onClick={() => removeQuestion(q.id)} className="text-gray-500 hover:text-red-400 transition shrink-0">
+                      <div key={q.id} className="bg-surface3 rounded-lg p-3 space-y-2.5 border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-400">Question {i + 1}</span>
+                          <button onClick={() => removeQuestion(q.id)} className="text-gray-500 hover:text-red-400 transition">
                             <Trash2 size={14} />
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 pl-6">
+
+                        <input
+                          className="input h-9 text-sm w-full"
+                          placeholder="e.g. What's your in-game username?"
+                          value={q.label}
+                          onChange={(e) => updateQuestion(q.id, "label", e.target.value)}
+                          maxLength={45}
+                        />
+
+                        <div className="grid grid-cols-2 gap-2">
                           <select
-                            className="input h-8 text-sm"
+                            className="input h-9 text-sm"
                             value={q.style}
                             onChange={(e) => updateQuestion(q.id, "style", e.target.value)}
                           >
                             <option value="short">Short answer</option>
                             <option value="paragraph">Paragraph</option>
                           </select>
-                          <label className="flex items-center gap-1.5 text-xs text-gray-400">
+                          <label className="flex items-center gap-1.5 text-xs text-gray-400 px-1">
                             <input
                               type="checkbox"
                               checked={q.required}
@@ -288,8 +289,9 @@ export default function PanelBuilder({ guildId }) {
                             Required
                           </label>
                         </div>
+
                         <input
-                          className="input h-8 text-sm ml-6 w-[calc(100%-1.5rem)]"
+                          className="input h-9 text-sm w-full"
                           placeholder="Placeholder text shown in the empty box (optional)"
                           value={q.placeholder}
                           onChange={(e) => updateQuestion(q.id, "placeholder", e.target.value)}
@@ -457,4 +459,3 @@ function Field({ label, hint, children }) {
       {children}
     </label>
   );
-}
