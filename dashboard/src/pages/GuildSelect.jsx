@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 import { api } from "../api/client.js";
 import Logo from "../components/Logo.jsx";
+
+// Same permission set used when the bot was first invited manually — Manage
+// Channels, Manage Roles, Send Messages, Embed Links, Attach Files, Read Message
+// History, View Channels. Recomputing this by hand is error-prone, so it's a fixed
+// constant here rather than something built from a list every render.
+const BOT_INVITE_PERMISSIONS = 268553232;
 
 export default function GuildSelect({ user }) {
   const [guilds, setGuilds] = useState(null);
@@ -10,6 +17,11 @@ export default function GuildSelect({ user }) {
   useEffect(() => {
     api.get("/api/guilds").then((res) => setGuilds(res.data));
   }, []);
+
+  const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
+  const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=${BOT_INVITE_PERMISSIONS}&scope=${encodeURIComponent(
+    "bot applications.commands"
+  )}`;
 
   async function openGuild(guild) {
     if (!guild.isSetUp) {
@@ -25,7 +37,18 @@ export default function GuildSelect({ user }) {
         <span className="text-gray-400 text-sm">Signed in as {user.username}</span>
       </div>
 
-      <h2 className="text-lg text-gray-200 font-medium mb-1">Choose a server</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg text-gray-200 font-medium">Choose a server</h2>
+        <a
+          href={inviteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-blurple hover:bg-indigo-500 transition rounded-lg text-sm font-medium shadow-lg shadow-blurple/10"
+        >
+          <UserPlus size={15} />
+          Invite bot to a server
+        </a>
+      </div>
       <p className="text-sm text-gray-500 mb-5">Pick a server to manage its ticket panels and settings.</p>
 
       {!guilds && <p className="text-gray-500">Loading your servers…</p>}
@@ -54,9 +77,20 @@ export default function GuildSelect({ user }) {
       </div>
 
       {guilds && guilds.length === 0 && (
-        <p className="text-gray-500">
-          No manageable servers found. You need Manage Server permission on a server the bot is invited to.
-        </p>
+        <div className="text-center py-10">
+          <p className="text-gray-500 mb-4">
+            No manageable servers found yet. Invite the bot to a server you manage, then it'll show up here.
+          </p>
+          <a
+            href={inviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blurple hover:bg-indigo-500 transition rounded-lg text-sm font-medium"
+          >
+            <UserPlus size={15} />
+            Invite bot to a server
+          </a>
+        </div>
       )}
     </div>
   );
