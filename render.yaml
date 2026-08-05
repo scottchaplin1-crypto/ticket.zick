@@ -9,7 +9,7 @@ services:
     runtime: node
     plan: free
     rootDir: server
-    buildCommand: npm install && npx prisma migrate deploy
+    buildCommand: npm install && npx prisma db push
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
