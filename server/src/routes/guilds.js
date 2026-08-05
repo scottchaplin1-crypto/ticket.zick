@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { getUserGuilds } from "../lib/discord.js";
+import { getUserGuilds, botApi } from "../lib/discord.js";
 
 const router = Router();
 
@@ -65,6 +65,24 @@ router.get("/:guildId", requireAuth, async (req, res) => {
   });
   if (!guild) return res.status(404).json({ error: "Guild not found" });
   res.json(guild);
+});
+
+// Lets the dashboard show real channel names in dropdowns instead of asking people
+// to copy/paste raw Discord IDs. Uses the bot's own token, since the bot is already
+// in the server and the logged-in dashboard user might not have that scope.
+router.get("/:guildId/channels", requireAuth, async (req, res) => {
+  try {
+    const { data } = await botApi.get(`/guilds/${req.params.guildId}/channels`);
+    res.json(
+      data
+        .filter((c) => [0, 4].includes(c.type)) // 0 = text channel, 4 = category
+        .sort((a, b) => a.position - b.position)
+        .map((c) => ({ id: c.id, name: c.name, type: c.type, parentId: c.parent_id }))
+    );
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "Couldn't load channels — is the bot still in this server?" });
+  }
 });
 
 export default router;
