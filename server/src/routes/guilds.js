@@ -67,6 +67,15 @@ router.get("/:guildId", requireAuth, async (req, res) => {
   res.json(guild);
 });
 
+router.put("/:guildId/quick-add", requireAuth, async (req, res) => {
+  const { quickAddEnabled, quickAddCommand, quickAddPanelId } = req.body;
+  const guild = await prisma.guild.update({
+    where: { id: req.params.guildId },
+    data: { quickAddEnabled, quickAddCommand, quickAddPanelId: quickAddPanelId || null },
+  });
+  res.json(guild);
+});
+
 // Lets the dashboard show real channel names in dropdowns instead of asking people
 // to copy/paste raw Discord IDs. Uses the bot's own token, since the bot is already
 // in the server and the logged-in dashboard user might not have that scope.
