@@ -15,6 +15,17 @@ router.get("/guild/:guildId", requireAuth, async (req, res) => {
   res.json(tickets);
 });
 
+// Manually mark a ticket closed from the dashboard — useful if its Discord channel
+// was deleted directly instead of via /close, which would otherwise leave it stuck
+// "open" forever and counting against the opener's max-open-tickets limit.
+router.patch("/:ticketId", requireAuth, async (req, res) => {
+  const ticket = await prisma.ticket.update({
+    where: { id: req.params.ticketId },
+    data: { status: "closed", closedAt: new Date() },
+  });
+  res.json(ticket);
+});
+
 // --- Bot-facing ---
 
 router.post("/bot", requireBotSecret, async (req, res) => {
