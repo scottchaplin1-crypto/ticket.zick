@@ -1,6 +1,7 @@
 import { PermissionFlagsBits, AttachmentBuilder } from "discord.js";
 import { api } from "../utils/api.js";
 import { buildTranscriptHtml } from "../utils/transcript.js";
+import { isStaffMember } from "../utils/permissions.js";
 
 // Every handler defers first (before any backend call) so Discord doesn't time out
 // waiting on a slow/sleeping Render service, and wraps everything in try/catch so a
@@ -64,6 +65,10 @@ export async function handleAdd(interaction) {
       return interaction.editReply("This isn't a ticket channel.");
     }
 
+    if (!(await isStaffMember(interaction.guildId, interaction.member))) {
+      return interaction.editReply("Only staff can add people to a ticket.");
+    }
+
     const user = interaction.options.getUser("user");
     await interaction.channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
     await interaction.editReply(`Added ${user} to the ticket.`);
@@ -98,6 +103,10 @@ export async function handleAddViaSelect(interaction) {
       await getTicketForChannel(interaction.channel.id);
     } catch {
       return interaction.editReply("This isn't a ticket channel.");
+    }
+
+    if (!(await isStaffMember(interaction.guildId, interaction.member))) {
+      return interaction.editReply("Only staff can add people to a ticket.");
     }
 
     const user = interaction.users.first();
