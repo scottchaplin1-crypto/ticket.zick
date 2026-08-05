@@ -2,6 +2,9 @@ import { PermissionFlagsBits, ChannelType, EmbedBuilder } from "discord.js";
 import { api } from "../utils/api.js";
 
 export async function handleTicketOpenButton(interaction) {
+  // Acknowledge immediately, before any slower backend calls — see note in panelSend.js.
+  await interaction.deferReply({ ephemeral: true });
+
   const panelId = interaction.customId.split(":")[1];
 
   const { data: panel } = await api.get(`/api/panels/bot/${panelId}`);
@@ -10,13 +13,10 @@ export async function handleTicketOpenButton(interaction) {
     params: { panelId, openerId: interaction.user.id },
   });
   if (openCheck.count >= panel.maxOpenPerUser) {
-    return interaction.reply({
+    return interaction.editReply({
       content: `You already have ${openCheck.count} open ticket(s) for this panel (max ${panel.maxOpenPerUser}).`,
-      ephemeral: true,
     });
   }
-
-  await interaction.deferReply({ ephemeral: true });
 
   const { data: guildData } = await api.get(`/api/customization/bot/${interaction.guildId}/full`);
   const staffRoleIds = guildData.staffRoles.map((r) => r.roleId);
