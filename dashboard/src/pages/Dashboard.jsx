@@ -6,6 +6,7 @@ import PanelBuilder from "./PanelBuilder.jsx";
 import Tickets from "./Tickets.jsx";
 import Branding from "./Branding.jsx";
 import StaffRoles from "./StaffRoles.jsx";
+import QuickCommands from "./QuickCommands.jsx";
 
 export default function Dashboard() {
   const { guildId } = useParams();
@@ -24,6 +25,7 @@ export default function Dashboard() {
           <Route path="tickets" element={<Tickets guildId={guildId} />} />
           <Route path="branding" element={<Branding guildId={guildId} />} />
           <Route path="staff" element={<StaffRoles guildId={guildId} />} />
+          <Route path="quick-commands" element={<QuickCommands guildId={guildId} />} />
         </Routes>
       </div>
     </div>
