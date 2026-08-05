@@ -2,6 +2,9 @@ import { PermissionFlagsBits, ChannelType, EmbedBuilder } from "discord.js";
 import { api } from "../utils/api.js";
 import { buildTicketActionRows } from "../utils/ticketComponents.js";
 
+// Lets staff type e.g. "$new @user" in any channel to open a ticket for that person,
+// instead of using the panel button. The trigger word and target panel are both set
+// per-guild from the dashboard's Quick Commands page.
 export async function handleMessageCreate(message) {
   if (message.author.bot || !message.guild || !message.member) return;
 
@@ -10,7 +13,7 @@ export async function handleMessageCreate(message) {
     const { data } = await api.get(`/api/customization/bot/${message.guild.id}/full`);
     guildData = data;
   } catch {
-    return;
+    return; // guild not set up in Ticket Zick yet, or backend unreachable — stay silent
   }
 
   const prefix = (guildData.quickAddCommand || "").trim();
@@ -62,7 +65,7 @@ export async function handleMessageCreate(message) {
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
       },
       {
-        id: message.author.id,
+        id: message.author.id, // whoever ran the command, in case they aren't already in a staff role
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
       },
       {
@@ -72,7 +75,7 @@ export async function handleMessageCreate(message) {
           PermissionFlagsBits.SendMessages,
           PermissionFlagsBits.ReadMessageHistory,
           PermissionFlagsBits.ManageChannels,
-          PermissionFlagsBits.ManageRoles,
+          // See note in ticketOpen.js — ManageRoles deliberately omitted here.
         ],
       },
       ...staffRoleIds.map((roleId) => ({
@@ -113,7 +116,7 @@ export async function handleMessageCreate(message) {
 
     const confirmation = await message.reply(`Created ${channel} for ${targetUser}.`);
     setTimeout(() => confirmation.delete().catch(() => {}), 8000);
-    await message.delete().catch(() => {});
+    await message.delete().catch(() => {}); // tidy up the "$new @user" message itself, best-effort
   } catch (err) {
     console.error("quick-add failed:", err.code || err.message);
     if (err.code === 50013 || err.code === 50001) {
