@@ -107,24 +107,43 @@ export async function handleClose(interaction) {
       return interaction.editReply("You don't have permission to close this ticket.");
     }
 
-    await interaction.editReply("🔒 Closing this ticket and generating a transcript...");
+    await interaction.editReply("🔒 Closing this ticket...");
+
+    if (!ticket.panel?.transcriptEnabled) {
+      await api.patch(`/api/tickets/bot/${ticket.id}`, { status: "closed" });
+      setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
+      return;
+    }
 
     const messages = await interaction.channel.messages.fetch({ limit: 100 });
     const html = buildTranscriptHtml(interaction.channel.name, [...messages.values()]);
 
-    const attachment = new AttachmentBuilder(Buffer.from(html, "utf-8"), {
-      name: `${interaction.channel.name}-transcript.html`,
-    });
+    const destination = ticket.panel.transcriptDestination || "dm";
+    const wantsDm = destination === "dm" || destination === "both";
+    const wantsChannel = destination === "channel" || destination === "both";
 
-    // Send transcript to the ticket opener via DM, best-effort
-    try {
-      const opener = await interaction.client.users.fetch(ticket.openerId);
-      await opener.send({
-        content: `Your ticket in **${interaction.guild.name}** has been closed. Transcript attached.`,
-        files: [attachment],
-      });
-    } catch {
-      // opener has DMs closed — no big deal
+    if (wantsDm) {
+      try {
+        const opener = await interaction.client.users.fetch(ticket.openerId);
+        await opener.send({
+          content: `Your ticket in **${interaction.guild.name}** has been closed. Transcript attached.`,
+          files: [new AttachmentBuilder(Buffer.from(html, "utf-8"), { name: `${interaction.channel.name}-transcript.html` })],
+        });
+      } catch {
+        // opener has DMs closed — no big deal, continue
+      }
+    }
+
+    if (wantsChannel && ticket.panel.transcriptChannelId) {
+      try {
+        const transcriptChannel = await interaction.guild.channels.fetch(ticket.panel.transcriptChannelId);
+        await transcriptChannel.send({
+          content: `Transcript for ticket **#${ticket.number}** (${interaction.channel.name}), opened by <@${ticket.openerId}>.`,
+          files: [new AttachmentBuilder(Buffer.from(html, "utf-8"), { name: `${interaction.channel.name}-transcript.html` })],
+        });
+      } catch (err) {
+        console.error("Failed to post transcript to channel:", err.code || err.message);
+      }
     }
 
     await api.patch(`/api/tickets/bot/${ticket.id}`, { status: "closed" });
