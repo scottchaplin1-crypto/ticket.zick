@@ -53,8 +53,8 @@ export default function Sidebar({ guildId, guildName }) {
 
   return (
     <div className="w-60 shrink-0 bg-surface2 min-h-screen p-4 flex flex-col border-r border-white/5">
-      <a href="/" className="block mb-6 px-1">
-        <Logo size={28} />
+      <a href="/" className="block mb-7 px-1">
+        <Logo size={32} />
       </a>
 
       <div className="relative mb-4" ref={switcherRef}>
@@ -63,7 +63,7 @@ export default function Sidebar({ guildId, guildName }) {
           className="w-full flex items-center justify-between px-1 py-1 rounded-lg hover:bg-surface3 transition text-left"
         >
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-0.5">Server</p>
+            <p className="text-[11px] uppercase tracking-wide text-cyan-400/70 mb-0.5">Server</p>
             <h2 className="font-semibold text-gray-100 truncate">{guildName}</h2>
           </div>
           <ChevronsUpDown size={14} className="text-gray-500 shrink-0 ml-2" />
