@@ -1,6 +1,6 @@
 import { Events } from "discord.js";
 import { handlePanelSend } from "../commands/panelSend.js";
-import { handleClaim, handleUnclaim, handleAdd, handleRemove, handleClose } from "../commands/ticketActions.js";
+import { handleClaim, handleUnclaim, handleAdd, handleRemove, handleClose, handleAddViaSelect } from "../commands/ticketActions.js";
 import { handleTicketOpenButton } from "./ticketOpen.js";
 
 export function registerInteractionHandler(client) {
@@ -17,8 +17,14 @@ export function registerInteractionHandler(client) {
         }
       }
 
-      if (interaction.isButton() && interaction.customId.startsWith("tz_open:")) {
-        return handleTicketOpenButton(interaction);
+      if (interaction.isButton()) {
+        if (interaction.customId.startsWith("tz_open:")) return handleTicketOpenButton(interaction);
+        if (interaction.customId === "tz_claim") return handleClaim(interaction);
+        if (interaction.customId === "tz_close") return handleClose(interaction);
+      }
+
+      if (interaction.isUserSelectMenu() && interaction.customId === "tz_adduser") {
+        return handleAddViaSelect(interaction);
       }
     } catch (err) {
       console.error("Interaction error:", err.response?.data || err.message || err);
