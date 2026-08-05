@@ -16,7 +16,9 @@ const BLANK = {
   namingPattern: "ticket-{number}",
   maxOpenPerUser: 1,
   pingRoleIds: "[]",
-  transcriptOnClose: true,
+  transcriptEnabled: true,
+  transcriptDestination: "dm",
+  transcriptChannelId: "",
 };
 
 export default function PanelBuilder({ guildId }) {
@@ -112,9 +114,27 @@ export default function PanelBuilder({ guildId }) {
               <input type="number" min={1} className="input" value={form.maxOpenPerUser} onChange={set("maxOpenPerUser")} />
             </Field>
             <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input type="checkbox" checked={form.transcriptOnClose} onChange={set("transcriptOnClose")} />
-              Send transcript when ticket is closed
+              <input type="checkbox" checked={form.transcriptEnabled} onChange={set("transcriptEnabled")} />
+              Save a transcript when tickets close
             </label>
+
+            {form.transcriptEnabled && (
+              <>
+                <Field label="Send transcript to">
+                  <select className="input" value={form.transcriptDestination} onChange={set("transcriptDestination")}>
+                    <option value="dm">DM the ticket opener</option>
+                    <option value="channel">Post in a channel</option>
+                    <option value="both">Both</option>
+                  </select>
+                </Field>
+
+                {(form.transcriptDestination === "channel" || form.transcriptDestination === "both") && (
+                  <Field label="Transcript channel ID (Discord)">
+                    <input className="input" value={form.transcriptChannelId || ""} onChange={set("transcriptChannelId")} />
+                  </Field>
+                )}
+              </>
+            )}
 
             <button
               onClick={save}
