@@ -1,8 +1,8 @@
 import { PermissionFlagsBits, ChannelType, EmbedBuilder } from "discord.js";
 import { api } from "../utils/api.js";
+import { buildTicketActionRows } from "../utils/ticketComponents.js";
 
 export async function handleTicketOpenButton(interaction) {
-  // Acknowledge immediately, before any slower backend calls — see note in panelSend.js.
   await interaction.deferReply({ ephemeral: true });
 
   try {
@@ -36,8 +36,6 @@ export async function handleTicketOpenButton(interaction) {
         id: interaction.user.id,
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
       },
-      // The bot must explicitly grant itself access too — otherwise denying @everyone
-      // above locks the bot out of the very channel it just created.
       {
         id: interaction.client.user.id,
         allow: [
@@ -45,6 +43,7 @@ export async function handleTicketOpenButton(interaction) {
           PermissionFlagsBits.SendMessages,
           PermissionFlagsBits.ReadMessageHistory,
           PermissionFlagsBits.ManageChannels,
+          PermissionFlagsBits.ManageRoles,
         ],
       },
       ...staffRoleIds.map((roleId) => ({
@@ -82,6 +81,7 @@ export async function handleTicketOpenButton(interaction) {
     await channel.send({
       content: `${interaction.user} ${pingText}`.trim(),
       embeds: [welcomeEmbed],
+      components: buildTicketActionRows(),
     });
 
     await interaction.editReply({ content: `Your ticket has been created: ${channel}` });
