@@ -1,8 +1,12 @@
 import jwt from "jsonwebtoken";
 
-// Verifies the dashboard's JWT (set as an httpOnly cookie after Discord OAuth login)
+// Verifies the dashboard's token, sent as `Authorization: Bearer <token>` on every
+// request (see dashboard/src/api/client.js). We use a header instead of a cookie
+// because the dashboard and this API live on different domains, and browsers block
+// cross-site cookies unpredictably.
 export function requireAuth(req, res, next) {
-  const token = req.cookies?.tz_token;
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
