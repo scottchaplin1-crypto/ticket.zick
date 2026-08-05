@@ -15,16 +15,20 @@ export async function handlePanelSend(interaction) {
 
   const panelId = interaction.options.getString("panel_id");
 
+  // Acknowledge immediately — Discord only waits 3 seconds for a response, and our
+  // backend can take longer than that to wake up if it's been idle (Render free plan).
+  await interaction.deferReply({ ephemeral: true });
+
   let panel;
   try {
     const { data } = await api.get(`/api/panels/bot/${panelId}`);
     panel = data;
   } catch {
-    return interaction.reply({ content: "Couldn't find that panel — check the ID in the dashboard.", ephemeral: true });
+    return interaction.editReply({ content: "Couldn't find that panel — check the ID in the dashboard." });
   }
 
   if (panel.guildId !== interaction.guildId) {
-    return interaction.reply({ content: "That panel belongs to a different server.", ephemeral: true });
+    return interaction.editReply({ content: "That panel belongs to a different server." });
   }
 
   const embed = new EmbedBuilder()
@@ -49,5 +53,5 @@ export async function handlePanelSend(interaction) {
     messageId: message.id,
   });
 
-  await interaction.reply({ content: "Panel posted!", ephemeral: true });
+  await interaction.editReply({ content: "Panel posted!" });
 }
