@@ -23,8 +23,9 @@ export async function handlePanelSend(interaction) {
   try {
     const { data } = await api.get(`/api/panels/bot/${panelId}`);
     panel = data;
-  } catch {
-    return interaction.editReply({ content: "Couldn't find that panel — check the ID in the dashboard." });
+  } catch (err) {
+    console.error("panel-send failed:", err.code || err.message);
+    return interaction.editReply({ content: "Couldn't reach the backend or find that panel — check the ID and try again." });
   }
 
   if (panel.guildId !== interaction.guildId) {
