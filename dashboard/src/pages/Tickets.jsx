@@ -7,9 +7,17 @@ const STATUS_COLOR = { open: "text-yellow-400", claimed: "text-blue-400", closed
 export default function Tickets({ guildId }) {
   const [tickets, setTickets] = useState(null);
 
-  useEffect(() => {
+  function load() {
     api.get(`/api/tickets/guild/${guildId}`).then((res) => setTickets(res.data));
-  }, [guildId]);
+  }
+
+  useEffect(load, [guildId]);
+
+  async function forceClose(ticketId) {
+    if (!confirm("Mark this ticket as closed? Use this if its Discord channel was deleted manually instead of via /close.")) return;
+    await api.patch(`/api/tickets/${ticketId}`, { status: "closed" });
+    load();
+  }
 
   return (
     <div>
@@ -28,6 +36,11 @@ export default function Tickets({ guildId }) {
                 <span className={`text-sm font-medium ${STATUS_COLOR[t.status]}`}>{t.status}</span>
                 {t.transcriptUrl && (
                   <a href={t.transcriptUrl} target="_blank" className="text-xs text-blurple hover:underline">Transcript</a>
+                )}
+                {t.status !== "closed" && (
+                  <button onClick={() => forceClose(t.id)} className="text-xs text-red-400 hover:underline">
+                    Mark closed
+                  </button>
                 )}
               </div>
             </div>
