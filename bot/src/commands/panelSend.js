@@ -47,7 +47,19 @@ export async function handlePanelSend(interaction) {
 
   const row = new ActionRowBuilder().addComponents(button);
 
-  const message = await interaction.channel.send({ embeds: [embed], components: [row] });
+  let message;
+  try {
+    message = await interaction.channel.send({ embeds: [embed], components: [row] });
+  } catch (err) {
+    console.error("panel-send: failed to post message:", err.code || err.message);
+    if (err.code === 50013) {
+      return interaction.editReply({
+        content:
+          "I don't have permission to post in this channel. In Discord, check this channel's permissions (or the server's Roles settings) and make sure the **Ticket Zick** role/bot has **View Channel**, **Send Messages**, and **Embed Links** allowed here.",
+      });
+    }
+    return interaction.editReply({ content: "Something went wrong posting the panel. Check the bot's logs for details." });
+  }
 
   await api.patch(`/api/panels/bot/${panel.id}/message`, {
     channelId: interaction.channel.id,
