@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// One row per Discord user that has logged into the dashboard
+model User {
+  id            String   @id // discord user id
+  username      String
+  discriminator String?
+  avatar        String?
+  accessToken   String
+  refreshToken  String
+  createdAt     DateTime @default(now())
+}
+
+// One row per Discord server that has been set up with Ticket Zick
+model Guild {
+  id          String    @id // discord guild id
+  name        String
+  icon        String?
+  ownerId     String
+  createdAt   DateTime  @default(now())
+
+  branding    Branding?
+  panels      Panel[]
+  staffRoles  StaffRole[]
+  tickets     Ticket[]
+}
+
+// Fully customisable dashboard + bot embed branding, per guild
+model Branding {
+  id              String  @id @default(cuid())
+  guild           Guild   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId         String  @unique
+
+  brandName       String  @default("Ticket Zick")
+  logoUrl         String?
+  primaryColor    String  @default("#5865F2")
+  accentColor     String  @default("#23A55A")
+  darkMode        Boolean @default(true)
+  welcomeMessage  String  @default("Thanks for reaching out! Support will be with you shortly.")
+  footerText      String  @default("Powered by Ticket Zick")
+}
+
+// A ticket panel is the embed+button posted in a channel that users click to open a ticket.
+// A guild can have multiple panels (e.g. "General Support", "Billing", "Report a Bug")
+model Panel {
+  id                String   @id @default(cuid())
+  guild             Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId           String
+
+  name              String   // internal name shown in dashboard
+  channelId         String?  // channel the panel embed is posted in
+  messageId         String?  // message id of the posted panel (for edits)
+
+  embedTitle        String   @default("Need help?")
+  embedDescription  String   @default("Click the button below to open a ticket.")
+  embedColor        String   @default("#5865F2")
+  embedImageUrl     String?
+  embedThumbnailUrl String?
+
+  buttonLabel       String   @default("Open Ticket")
+  buttonEmoji       String   @default("🎫")
+  buttonStyle       String   @default("Primary") // Primary, Secondary, Success, Danger
+
+  ticketCategoryId  String?  // discord category channel id new ticket channels go under
+  namingPattern     String   @default("ticket-{number}") // {number} {username}
+  maxOpenPerUser    Int      @default(1)
+
+  pingRoleIds       String   @default("[]") // JSON array of role ids to ping/add on new ticket
+  transcriptOnClose Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tickets           Ticket[]
+}
+
+model StaffRole {
+  id       String @id @default(cuid())
+  guild    Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId  String
+  roleId   String
+  roleName String
+
+  @@unique([guildId, roleId])
+}
+
+model Ticket {
+  id             String    @id @default(cuid())
+  guild          Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId        String
+  panel          Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  panelId        String
+
+  number         Int
+  channelId      String
+  openerId       String
+  openerUsername String
+  claimedById    String?
+
+  status         String    @default("open") // open, claimed, closed
+  transcriptUrl  String?
+
+  createdAt      DateTime  @default(now())
+  closedAt       DateTime?
+}
