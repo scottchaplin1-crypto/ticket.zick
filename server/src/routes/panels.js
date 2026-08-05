@@ -59,3 +59,5 @@ function sanitize(body) {
   for (const key of allowed) if (key in body) out[key] = body[key];
   return out;
 }
+
+export default router;
