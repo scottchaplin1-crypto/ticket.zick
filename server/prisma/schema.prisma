@@ -73,7 +73,10 @@ model Panel {
   maxOpenPerUser    Int      @default(1)
 
   pingRoleIds       String   @default("[]") // JSON array of role ids to ping/add on new ticket
-  transcriptOnClose Boolean  @default(true)
+
+  transcriptEnabled     Boolean @default(true)
+  transcriptDestination String  @default("dm") // "dm", "channel", or "both"
+  transcriptChannelId   String? // required if destination is "channel" or "both"
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
