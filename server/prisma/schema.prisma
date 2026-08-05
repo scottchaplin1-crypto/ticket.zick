@@ -30,6 +30,10 @@ model Guild {
   panels      Panel[]
   staffRoles  StaffRole[]
   tickets     Ticket[]
+
+  quickAddEnabled Boolean @default(true)
+  quickAddCommand String  @default("$new") // e.g. "$new" — typed as "$new @user" in any channel
+  quickAddPanelId String? // which panel's settings (category, naming, transcript) quick-added tickets use
 }
 
 // Fully customisable dashboard + bot embed branding, per guild
