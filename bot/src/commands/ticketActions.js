@@ -2,10 +2,6 @@ import { PermissionFlagsBits, AttachmentBuilder } from "discord.js";
 import { api } from "../utils/api.js";
 import { buildTranscriptHtml } from "../utils/transcript.js";
 
-// Every handler defers first (before any backend call) so Discord doesn't time out
-// waiting on a slow/sleeping Render service, and wraps everything in try/catch so a
-// failure gives a clear message instead of leaving the interaction stuck "thinking".
-
 async function getTicketForChannel(channelId) {
   const { data } = await api.get(`/api/tickets/bot/by-channel/${channelId}`);
   return data;
@@ -69,6 +65,26 @@ export async function handleAdd(interaction) {
     await interaction.editReply(`Added ${user} to the ticket.`);
   } catch (err) {
     console.error("add failed:", err.code || err.message);
+    await interaction.editReply(friendlyError(err));
+  }
+}
+
+export async function handleAddViaSelect(interaction) {
+  await interaction.deferReply();
+  try {
+    try {
+      await getTicketForChannel(interaction.channel.id);
+    } catch {
+      return interaction.editReply("This isn't a ticket channel.");
+    }
+
+    const user = interaction.users.first();
+    if (!user) return interaction.editReply("No user was selected.");
+
+    await interaction.channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
+    await interaction.editReply(`Added ${user} to the ticket.`);
+  } catch (err) {
+    console.error("add (select menu) failed:", err.code || err.message);
     await interaction.editReply(friendlyError(err));
   }
 }
