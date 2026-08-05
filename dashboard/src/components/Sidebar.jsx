@@ -16,6 +16,7 @@ export default function Sidebar({ guildId, guildName }) {
       <NavLink to={`/guild/${guildId}/tickets`} className={linkClass}>Tickets</NavLink>
       <NavLink to={`/guild/${guildId}/branding`} className={linkClass}>Branding</NavLink>
       <NavLink to={`/guild/${guildId}/staff`} className={linkClass}>Staff Roles</NavLink>
+      <NavLink to={`/guild/${guildId}/quick-commands`} className={linkClass}>Quick Commands</NavLink>
     </div>
   );
 }
