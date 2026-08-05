@@ -46,17 +46,14 @@ router.get("/discord/callback", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // sameSite: "none" + secure: true is required because the dashboard and this
-    // server live on different Render URLs — the browser treats that as "cross-site",
-    // and blocks the login cookie by default unless we explicitly allow it.
-    res.cookie("tz_token", jwtToken, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.redirect(process.env.DASHBOARD_URL);
+    // We deliberately do NOT use a cookie here. The dashboard and this server live on
+    // two different Render URLs, and modern browsers increasingly block cross-site
+    // cookies outright (regardless of SameSite/Secure settings), which causes an
+    // endless login loop. Instead we hand the token back via the URL, and the
+    // dashboard stores it itself and sends it back as an Authorization header.
+    const redirectUrl = new URL("/auth/callback", process.env.DASHBOARD_URL);
+    redirectUrl.searchParams.set("token", jwtToken);
+    res.redirect(redirectUrl.toString());
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send("Discord login failed");
@@ -64,12 +61,12 @@ router.get("/discord/callback", async (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("tz_token");
   res.json({ ok: true });
 });
 
 router.get("/me", (req, res) => {
-  const token = req.cookies?.tz_token;
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
