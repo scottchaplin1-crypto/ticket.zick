@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, Inbox, Palette, Users, Zap, ChevronsUpDown, Check } from "lucide-react";
+import { LayoutGrid, Inbox, Palette, Users, Zap, ChevronsUpDown, Check, UserPlus } from "lucide-react";
 import { api } from "../api/client.js";
 import Logo from "./Logo.jsx";
+
+const BOT_INVITE_PERMISSIONS = 268553232;
 
 const NAV = [
   { to: "tickets", label: "Tickets", icon: Inbox },
@@ -90,6 +92,15 @@ export default function Sidebar({ guildId, guildName }) {
               </button>
             ))}
             {guilds?.length === 0 && <p className="text-xs text-gray-500 p-2">No other manageable servers found.</p>}
+            <a
+              href={`https://discord.com/api/oauth2/authorize?client_id=${import.meta.env.VITE_DISCORD_CLIENT_ID}&permissions=${BOT_INVITE_PERMISSIONS}&scope=${encodeURIComponent("bot applications.commands")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-2 py-1.5 mt-1 rounded-md hover:bg-surface3 transition text-cyan-400 text-sm border-t border-white/5 pt-2.5"
+            >
+              <UserPlus size={14} />
+              Invite to another server
+            </a>
           </div>
         )}
       </div>
