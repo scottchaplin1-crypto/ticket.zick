@@ -20,7 +20,7 @@ export default function Logo({ size = 36, showWordmark = true, className = "" })
         <TicketMark size={size} />
       )}
       {showWordmark && (
-        <span className="font-bold tracking-tight text-white leading-none" style={{ fontSize: size * 0.42 }}>
+        <span className="font-bold tracking-tight text-white leading-none" style={{ fontSize: size * 0.46 }}>
           Ticket<span className="text-blurple">Zick</span>
         </span>
       )}
