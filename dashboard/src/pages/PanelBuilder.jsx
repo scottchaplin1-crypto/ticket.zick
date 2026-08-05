@@ -71,6 +71,8 @@ export default function PanelBuilder({ guildId }) {
   // another tab and back — or refreshing the page — keeps you exactly where you were.
   useEffect(() => {
     setLoaded(false);
+    setSendChannelId("");
+    setSendResult(null);
     if (!panelId) {
       setForm(BLANK);
       setLoaded(true);
@@ -194,7 +196,7 @@ export default function PanelBuilder({ guildId }) {
 
       {/* Context bar: always makes it obvious what you're editing right now */}
       <div className="flex items-center gap-2.5 mb-4 px-4 py-2.5 rounded-lg bg-surface2 border border-white/5">
-        <Ticket size={16} className="text-blurple shrink-0" />
+        <Ticket size={16} className="text-cyan-400 shrink-0" />
         <span className="text-sm text-gray-400">
           {panelId ? (
             <>
@@ -236,7 +238,7 @@ export default function PanelBuilder({ guildId }) {
             </Card>
 
             <Card>
-              <SectionHeading icon={MousePointerClick} title="Button" />
+              <SectionHeading icon={MousePointerClick} title="Button" accent="cyan" />
               <div className="space-y-3">
                 <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
                   <Field label="Button label"><input className="input" value={form.buttonLabel} onChange={set("buttonLabel")} /></Field>
@@ -258,7 +260,7 @@ export default function PanelBuilder({ guildId }) {
             </Card>
 
             <Card>
-              <SectionHeading icon={ListChecks} title="Pre-ticket questions" />
+              <SectionHeading icon={ListChecks} title="Pre-ticket questions" accent="cyan" />
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm text-gray-300">
                   <input type="checkbox" checked={form.questionsEnabled} onChange={set("questionsEnabled")} />
@@ -413,7 +415,7 @@ export default function PanelBuilder({ guildId }) {
             {panelId && (
               <div className="bg-surface2 border border-white/5 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <Send size={15} className="text-blurple" />
+                  <Send size={15} className="text-cyan-400" />
                   <h3 className="font-semibold text-gray-200 text-sm">Send to Discord</h3>
                 </div>
                 <p className="text-xs text-gray-500">
@@ -490,10 +492,10 @@ export default function PanelBuilder({ guildId }) {
   );
 }
 
-function SectionHeading({ icon: Icon, title }) {
+function SectionHeading({ icon: Icon, title, accent = "blurple" }) {
   return (
     <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/5">
-      <Icon size={15} className="text-blurple" />
+      <Icon size={15} className={accent === "cyan" ? "text-cyan-400" : "text-blurple"} />
       <h3 className="font-semibold text-gray-200 text-sm">{title}</h3>
     </div>
   );
@@ -506,7 +508,7 @@ function Field({ label, hint, children }) {
         {label}
         {hint && (
           <Tooltip text={hint}>
-            <Info size={12} className="text-gray-600 hover:text-gray-400 transition cursor-help" />
+            <Info size={12} className="text-gray-600 hover:text-cyan-400 transition cursor-help" />
           </Tooltip>
         )}
       </span>
