@@ -67,7 +67,7 @@ export default function EmojiPicker({ value, onChange }) {
                       setOpen(false);
                     }}
                     className={`text-lg leading-none w-9 h-9 flex items-center justify-center rounded-md transition hover:bg-surface3 ${
-                      value === emoji ? "bg-blurple/30 ring-1 ring-blurple" : ""
+                      value === emoji ? "bg-cyan-400/20 ring-1 ring-cyan-400" : ""
                     }`}
                   >
                     {emoji}
