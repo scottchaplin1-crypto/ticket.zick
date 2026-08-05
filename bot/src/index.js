@@ -34,6 +34,12 @@ client.once(Events.ClientReady, async (c) => {
   }
 });
 
+// A single failed Discord API call (e.g. missing permissions) shouldn't take the
+// whole bot down — log it and keep running instead of crashing.
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled rejection (bot stayed alive):", err?.message || err);
+});
+
 registerInteractionHandler(client);
 
 client.login(process.env.DISCORD_BOT_TOKEN);
