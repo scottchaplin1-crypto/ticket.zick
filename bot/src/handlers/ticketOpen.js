@@ -3,6 +3,7 @@ import { api } from "../utils/api.js";
 import { buildTicketActionRows } from "../utils/ticketComponents.js";
 
 export async function handleTicketOpenButton(interaction) {
+  // Acknowledge immediately, before any slower backend calls — see note in panelSend.js.
   await interaction.deferReply({ ephemeral: true });
 
   try {
@@ -36,6 +37,8 @@ export async function handleTicketOpenButton(interaction) {
         id: interaction.user.id,
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
       },
+      // The bot must explicitly grant itself access too — otherwise denying @everyone
+      // above locks the bot out of the very channel it just created.
       {
         id: interaction.client.user.id,
         allow: [
@@ -43,56 +46,3 @@ export async function handleTicketOpenButton(interaction) {
           PermissionFlagsBits.SendMessages,
           PermissionFlagsBits.ReadMessageHistory,
           PermissionFlagsBits.ManageChannels,
-          PermissionFlagsBits.ManageRoles,
-        ],
-      },
-      ...staffRoleIds.map((roleId) => ({
-        id: roleId,
-        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
-      })),
-    ];
-
-    const channel = await interaction.guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      parent: panel.ticketCategoryId || undefined,
-      permissionOverwrites: overwrites,
-    });
-
-    const ticket = (
-      await api.post("/api/tickets/bot", {
-        guildId: interaction.guildId,
-        panelId: panel.id,
-        channelId: channel.id,
-        openerId: interaction.user.id,
-        openerUsername: interaction.user.username,
-      })
-    ).data;
-
-    const branding = guildData.branding || {};
-    const welcomeEmbed = new EmbedBuilder()
-      .setTitle(`Ticket #${ticket.number}`)
-      .setDescription(branding.welcomeMessage || "Thanks for reaching out! Support will be with you shortly.")
-      .setColor(branding.primaryColor || panel.embedColor)
-      .setFooter({ text: branding.footerText || "Powered by Ticket Zick" });
-
-    const pingText = pingRoleIds.length ? pingRoleIds.map((id) => `<@&${id}>`).join(" ") : "";
-
-    await channel.send({
-      content: `${interaction.user} ${pingText}`.trim(),
-      embeds: [welcomeEmbed],
-      components: buildTicketActionRows(),
-    });
-
-    await interaction.editReply({ content: `Your ticket has been created: ${channel}` });
-  } catch (err) {
-    console.error("ticket-open failed:", err.code || err.message);
-    if (err.code === 50013) {
-      return interaction.editReply({
-        content:
-          "I don't have permission to create a channel here. In Discord, check Server Settings → Roles → Ticket Zick, and make sure **Manage Channels** is enabled — also check the ticket category (if you set one) allows the Ticket Zick role to manage/view it.",
-      });
-    }
-    return interaction.editReply({ content: "Something went wrong creating your ticket. Check the bot's logs for details." });
-  }
-}
