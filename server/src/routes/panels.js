@@ -53,11 +53,9 @@ function sanitize(body) {
     "name", "embedTitle", "embedDescription", "embedColor", "embedImageUrl",
     "embedThumbnailUrl", "buttonLabel", "buttonEmoji", "buttonStyle",
     "ticketCategoryId", "namingPattern", "maxOpenPerUser", "pingRoleIds",
-    "transcriptOnClose",
+    "transcriptEnabled", "transcriptDestination", "transcriptChannelId",
   ];
   const out = {};
   for (const key of allowed) if (key in body) out[key] = body[key];
   return out;
 }
-
-export default router;
