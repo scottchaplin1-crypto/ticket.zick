@@ -2,11 +2,9 @@ import "dotenv/config";
 import http from "http";
 import { Client, GatewayIntentBits, Partials, Events } from "discord.js";
 import { registerInteractionHandler } from "./handlers/interactionCreate.js";
+import { handleMessageCreate } from "./handlers/messageCreate.js";
 import { deployGlobalCommands } from "./commands/registry.js";
 
-// Render's free plan only supports "Web Service" (not "Background Worker"), and web
-// services must respond on a port to be considered healthy. This tiny server exists
-// purely to satisfy that check — it has nothing to do with the bot's actual logic.
 const PORT = process.env.PORT || 3000;
 http
   .createServer((req, res) => {
@@ -34,12 +32,13 @@ client.once(Events.ClientReady, async (c) => {
   }
 });
 
-// A single failed Discord API call (e.g. missing permissions) shouldn't take the
-// whole bot down — log it and keep running instead of crashing.
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled rejection (bot stayed alive):", err?.message || err);
 });
 
 registerInteractionHandler(client);
+client.on(Events.MessageCreate, (message) => {
+  handleMessageCreate(message).catch((err) => console.error("messageCreate handler error:", err.message));
+});
 
 client.login(process.env.DISCORD_BOT_TOKEN);
