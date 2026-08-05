@@ -23,6 +23,7 @@ const BLANK = {
 
 export default function PanelBuilder({ guildId }) {
   const [panels, setPanels] = useState([]);
+  const [channels, setChannels] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
@@ -32,6 +33,12 @@ export default function PanelBuilder({ guildId }) {
   }
 
   useEffect(load, [guildId]);
+  useEffect(() => {
+    api.get(`/api/guilds/${guildId}/channels`).then((res) => setChannels(res.data)).catch(() => setChannels([]));
+  }, [guildId]);
+
+  const textChannels = channels.filter((c) => c.type === 0);
+  const categories = channels.filter((c) => c.type === 4);
 
   function select(panel) {
     setSelected(panel.id);
@@ -108,7 +115,14 @@ export default function PanelBuilder({ guildId }) {
             </div>
             <Field label="Embed image URL"><input className="input" value={form.embedImageUrl || ""} onChange={set("embedImageUrl")} /></Field>
             <Field label="Embed thumbnail URL"><input className="input" value={form.embedThumbnailUrl || ""} onChange={set("embedThumbnailUrl")} /></Field>
-            <Field label="Ticket category ID (Discord)"><input className="input" value={form.ticketCategoryId || ""} onChange={set("ticketCategoryId")} /></Field>
+            <Field label="Ticket category">
+              <select className="input" value={form.ticketCategoryId || ""} onChange={set("ticketCategoryId")}>
+                <option value="">No category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </Field>
             <Field label="Channel naming pattern"><input className="input" value={form.namingPattern} onChange={set("namingPattern")} /></Field>
             <Field label="Max open tickets per user">
               <input type="number" min={1} className="input" value={form.maxOpenPerUser} onChange={set("maxOpenPerUser")} />
@@ -129,8 +143,13 @@ export default function PanelBuilder({ guildId }) {
                 </Field>
 
                 {(form.transcriptDestination === "channel" || form.transcriptDestination === "both") && (
-                  <Field label="Transcript channel ID (Discord)">
-                    <input className="input" value={form.transcriptChannelId || ""} onChange={set("transcriptChannelId")} />
+                  <Field label="Transcript channel">
+                    <select className="input" value={form.transcriptChannelId || ""} onChange={set("transcriptChannelId")}>
+                      <option value="">Select a channel…</option>
+                      {textChannels.map((c) => (
+                        <option key={c.id} value={c.id}>#{c.name}</option>
+                      ))}
+                    </select>
                   </Field>
                 )}
               </>
