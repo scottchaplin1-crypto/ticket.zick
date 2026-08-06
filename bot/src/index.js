@@ -97,12 +97,11 @@ client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
       await trackStat(newMember.guild, newMember.id, "boosts");
     }
 
-    // Count however many new roles they picked up in this update — usually 1, but
-    // could be more if several were granted at once (e.g. a reaction role panel
-    // with multiple selections, or a dashboard bulk change).
-    const newRoleCount = newMember.roles.cache.size - oldMember.roles.cache.size;
-    if (newRoleCount > 0) {
-      await trackStat(newMember.guild, newMember.id, "roles_received", newRoleCount);
+    // Track each newly-added role separately (as "roles_received:<roleId>") so an
+    // achievement can require one specific role, not just "any role at all".
+    const newRoleIds = [...newMember.roles.cache.keys()].filter((id) => !oldMember.roles.cache.has(id));
+    for (const roleId of newRoleIds) {
+      await trackStat(newMember.guild, newMember.id, `roles_received:${roleId}`);
     }
   } catch (err) {
     console.error("guildMemberUpdate tracking error:", err.message);
