@@ -1,0 +1,22 @@
+# Never commit real secrets — only .env.example files (with placeholder values)
+# should ever be in this repo. Real values live in Render's Environment tabs.
+.env
+.env.local
+*.env
+!.env.example
+
+# Dependencies (reinstalled from package.json, no reason to commit them)
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Local database files, if anyone ever runs SQLite locally for quick testing
+*.db
+*.sqlite
+
+# OS/editor noise
+.DS_Store
+.vscode/
+*.log
