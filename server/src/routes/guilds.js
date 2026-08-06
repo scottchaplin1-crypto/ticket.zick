@@ -8,6 +8,8 @@ const router = Router();
 const MANAGE_GUILD = 0x20; // permission bit
 
 // Returns guilds the logged-in user manages, flagged with whether Ticket Zick is set up
+// AND whether the bot itself is actually present — these are different things: a guild
+// can have dashboard config saved (isSetUp) from before the bot was ever kicked/removed.
 router.get("/", requireAuth, async (req, res) => {
   try {
     const discordGuilds = await getUserGuilds(req.user.accessToken);
@@ -23,12 +25,21 @@ router.get("/", requireAuth, async (req, res) => {
       })
     ).map((g) => g.id);
 
+    let botGuildIds = new Set();
+    try {
+      const { data: botGuilds } = await botApi.get("/users/@me/guilds");
+      botGuildIds = new Set(botGuilds.map((g) => g.id));
+    } catch (err) {
+      console.error("Couldn't fetch bot's guild list:", err.response?.data || err.message);
+    }
+
     res.json(
       manageable.map((g) => ({
         id: g.id,
         name: g.name,
         icon: g.icon,
         isSetUp: setupGuildIds.includes(g.id),
+        botPresent: botGuildIds.has(g.id),
       }))
     );
   } catch (err) {
