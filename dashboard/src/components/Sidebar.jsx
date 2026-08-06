@@ -50,13 +50,13 @@ export default function Sidebar({ guildId, guildName }) {
   const panelsHref = lastPanelId ? `${base}/panel/${lastPanelId}` : base;
   const itemClass = (active) =>
     `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition ${
-      active ? "bg-blurple text-white" : "text-gray-300 hover:bg-surface3 hover:text-white"
+      active ? "bg-blurple text-white shadow-lg shadow-blurple/25" : "text-gray-300 hover:bg-surface3 hover:text-white"
     }`;
 
   return (
     <div className="w-60 shrink-0 bg-surface2 min-h-screen p-4 flex flex-col border-r border-white/5">
       <a href="/" className="block mb-7 px-1">
-        <Logo size={32} />
+        <Logo size={40} />
       </a>
 
       <div className="relative mb-4" ref={switcherRef}>
