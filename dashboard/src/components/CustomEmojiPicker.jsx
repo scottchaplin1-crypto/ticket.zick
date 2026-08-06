@@ -7,6 +7,7 @@ import { api } from "../api/client.js";
 export default function CustomEmojiPicker({ guildId, onInsert }) {
   const [open, setOpen] = useState(false);
   const [emojis, setEmojis] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -19,7 +20,15 @@ export default function CustomEmojiPicker({ guildId, onInsert }) {
 
   function toggle() {
     setOpen((o) => !o);
-    if (!emojis) api.get(`/api/guilds/${guildId}/custom-emojis`).then((res) => setEmojis(res.data)).catch(() => setEmojis([]));
+    if (!emojis) {
+      api
+        .get(`/api/guilds/${guildId}/custom-emojis`)
+        .then((res) => setEmojis(res.data))
+        .catch(() => {
+          setEmojis([]);
+          setLoadFailed(true);
+        });
+    }
   }
 
   return (
@@ -30,7 +39,12 @@ export default function CustomEmojiPicker({ guildId, onInsert }) {
       {open && (
         <div className="absolute z-30 right-0 mt-1 w-56 max-h-52 overflow-y-auto bg-[#1a1b1e] border border-white/10 rounded-lg shadow-2xl p-2">
           {emojis === null && <p className="text-xs text-gray-500 p-1">Loading…</p>}
-          {emojis?.length === 0 && <p className="text-xs text-gray-500 p-1">No custom emojis found in this server.</p>}
+          {emojis?.length === 0 && loadFailed && (
+            <p className="text-xs text-red-400 p-1">
+              Couldn't load emojis — check the server's logs for the real error (likely a permissions issue).
+            </p>
+          )}
+          {emojis?.length === 0 && !loadFailed && <p className="text-xs text-gray-500 p-1">No custom emojis found in this server.</p>}
           <div className="grid grid-cols-6 gap-1">
             {emojis?.map((e) => (
               <button
