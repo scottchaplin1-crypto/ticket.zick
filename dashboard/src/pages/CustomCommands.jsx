@@ -1,0 +1,151 @@
+import { useEffect, useState } from "react";
+import { Plus, Trash2, Terminal } from "lucide-react";
+import { api } from "../api/client.js";
+import Card from "../components/Card.jsx";
+
+const BLANK = {
+  trigger: "",
+  embedTitle: "",
+  embedDescription: "",
+  embedColor: "#5865F2",
+  embedImageUrl: "",
+  embedThumbnailUrl: "",
+};
+
+export default function CustomCommands({ guildId }) {
+  const [commands, setCommands] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState(BLANK);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function load() {
+    api.get(`/api/custom-commands/guild/${guildId}`).then((res) => setCommands(res.data));
+  }
+  useEffect(load, [guildId]);
+
+  function select(cmd) {
+    setSelected(cmd.id);
+    setForm(cmd);
+    setError("");
+  }
+
+  function newCommand() {
+    setSelected(null);
+    setForm(BLANK);
+    setError("");
+  }
+
+  async function save() {
+    if (!form.trigger.trim()) {
+      setError("Give the command a trigger word or phrase first.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      if (selected) {
+        await api.patch(`/api/custom-commands/${selected}`, form);
+      } else {
+        const { data } = await api.post(`/api/custom-commands/guild/${guildId}`, form);
+        setSelected(data.id);
+      }
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || "Couldn't save that command.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(id) {
+    if (!confirm("Delete this command?")) return;
+    await api.delete(`/api/custom-commands/${id}`);
+    if (selected === id) newCommand();
+    load();
+  }
+
+  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold">Custom Commands</h1>
+        <button onClick={newCommand} className="flex items-center gap-1.5 px-4 py-2 bg-blurple hover:bg-indigo-500 transition rounded-lg text-sm font-medium">
+          <Plus size={16} /> New Command
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 mb-6">
+        Typing the trigger word/phrase exactly, in any channel, posts the embed you set up here — anyone can use these,
+        not just staff.
+      </p>
+
+      <div className="grid grid-cols-2 gap-6 items-start">
+        <Card title="Existing commands">
+          <div className="divide-y divide-white/5">
+            {commands.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => select(c)}
+                className={`w-full flex items-center justify-between py-2.5 text-left ${selected === c.id ? "text-cyan-400" : "text-gray-300 hover:text-white"} transition`}
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <Terminal size={13} className="opacity-60" />
+                  {c.trigger}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); remove(c.id); }}
+                  className="text-gray-600 hover:text-red-400 transition"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </button>
+            ))}
+            {commands.length === 0 && <p className="text-sm text-gray-500 py-2">No custom commands yet.</p>}
+          </div>
+        </Card>
+
+        <Card title={selected ? "Edit command" : "New command"}>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="block text-xs text-gray-400 mb-1">Trigger (exact text that fires it, e.g. !rules)</span>
+              <input className="input" value={form.trigger} onChange={set("trigger")} />
+            </label>
+            <label className="block">
+              <span className="block text-xs text-gray-400 mb-1">Embed title</span>
+              <input className="input" value={form.embedTitle} onChange={set("embedTitle")} />
+            </label>
+            <label className="block">
+              <span className="block text-xs text-gray-400 mb-1">Embed description</span>
+              <textarea className="input" rows={3} value={form.embedDescription} onChange={set("embedDescription")} />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="block text-xs text-gray-400 mb-1">Embed color</span>
+                <input type="color" className="input h-10" value={form.embedColor} onChange={set("embedColor")} />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-400 mb-1">Image URL</span>
+                <input className="input" value={form.embedImageUrl || ""} onChange={set("embedImageUrl")} />
+              </label>
+            </div>
+            <label className="block">
+              <span className="block text-xs text-gray-400 mb-1">Thumbnail URL</span>
+              <input className="input" value={form.embedThumbnailUrl || ""} onChange={set("embedThumbnailUrl")} />
+            </label>
+
+            {error && <p className="text-xs text-red-400">{error}</p>}
+
+            <button
+              onClick={save}
+              disabled={saving}
+              className="w-full py-2 bg-blurple hover:bg-indigo-500 transition rounded-lg font-medium disabled:opacity-50"
+            >
+              {saving ? "Saving…" : selected ? "Save changes" : "Create command"}
+            </button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
