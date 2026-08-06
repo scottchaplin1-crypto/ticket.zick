@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "gg sans", "Segoe UI", Roboto, sans-serif;
+  background-color: #1e1f22;
+  background-image:
+    radial-gradient(700px circle at 8% -8%, rgba(88, 101, 242, 0.14), transparent 55%),
+    radial-gradient(600px circle at 100% 0%, rgba(34, 211, 238, 0.1), transparent 55%),
+    radial-gradient(500px circle at 50% 100%, rgba(88, 101, 242, 0.06), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.input {
+  @apply w-full bg-surface3 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-blurple focus:border-transparent hover:border-white/20;
+}
