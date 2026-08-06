@@ -122,6 +122,18 @@ router.get("/:guildId/roles", requireAuth, async (req, res) => {
   }
 });
 
+// This server's own custom emojis, so people can insert them without needing to
+// know/type the raw <:name:id> code from memory.
+router.get("/:guildId/custom-emojis", requireAuth, async (req, res) => {
+  try {
+    const { data } = await botApi.get(`/guilds/${req.params.guildId}/emojis`);
+    res.json(data.map((e) => ({ id: e.id, name: e.name, animated: e.animated })));
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "Couldn't load emojis — is the bot still in this server?" });
+  }
+});
+
 // Creates a brand new Discord role directly from the dashboard, so people building
 // a reaction-role panel don't have to go create the role in Discord separately and
 // come back. New roles get no permissions and aren't pingable by default — just a
