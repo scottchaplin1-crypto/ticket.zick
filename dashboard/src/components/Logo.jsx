@@ -20,8 +20,9 @@ export default function Logo({ size = 36, showWordmark = true, className = "" })
         <TicketMark size={size} />
       )}
       {showWordmark && (
-        <span className="font-bold tracking-tight text-white leading-none" style={{ fontSize: size * 0.46 }}>
-          Ticket<span className="text-blurple">Zick</span>
+        <span className="font-extrabold tracking-tight leading-none" style={{ fontSize: size * 0.5 }}>
+          <span className="text-white">Ticket</span>
+          <span className="bg-gradient-to-r from-blurple to-cyan-400 bg-clip-text text-transparent">Zick</span>
         </span>
       )}
     </div>
@@ -33,16 +34,23 @@ export default function Logo({ size = 36, showWordmark = true, className = "" })
 // logo.png has been uploaded.
 function TicketMark({ size }) {
   const maskId = useId();
+  const gradId = useId();
   const height = Math.round(size * 0.68);
 
   return (
     <svg width={size} height={height} viewBox="0 0 40 27" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5865F2" />
+          <stop offset="100%" stopColor="#22D3EE" />
+        </linearGradient>
+      </defs>
       <mask id={maskId}>
         <rect x="0" y="0" width="40" height="27" rx="6" fill="white" />
         <circle cx="0" cy="13.5" r="5" fill="black" />
         <circle cx="40" cy="13.5" r="5" fill="black" />
       </mask>
-      <rect x="0" y="0" width="40" height="27" rx="6" fill="#5865F2" mask={`url(#${maskId})`} />
+      <rect x="0" y="0" width="40" height="27" rx="6" fill={`url(#${gradId})`} mask={`url(#${maskId})`} />
       <line x1="27" y1="4" x2="27" y2="23" stroke="#161719" strokeWidth="2" strokeDasharray="2.5 3" mask={`url(#${maskId})`} />
       <circle cx="27" cy="13.5" r="2" fill="#FEE75C" mask={`url(#${maskId})`} />
     </svg>
