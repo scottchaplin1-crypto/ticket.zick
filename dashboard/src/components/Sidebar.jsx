@@ -126,18 +126,19 @@ export default function Sidebar({ guildId, guildName }) {
         Invite bot to a server
       </a>
 
-      <div className="mt-auto pt-4 border-t border-white/5 flex flex-col gap-1">
-        {DONATE_URL && (
-          <a
-            href={DONATE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-1 py-1.5 text-xs text-amber-400 hover:text-amber-300 transition"
-          >
-            <Coffee size={13} />
-            Buy me a coffee
-          </a>
-        )}
+      {DONATE_URL && (
+        <a
+          href={DONATE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 px-3 py-2 mt-2 rounded-lg text-sm font-medium text-amber-400 border border-amber-400/25 hover:bg-amber-400/10 hover:shadow-[0_0_16px_rgba(251,191,36,0.2)] transition-all duration-150"
+        >
+          <Coffee size={16} strokeWidth={2} />
+          Buy me a coffee
+        </a>
+      )}
+
+      <div className="mt-auto pt-4 border-t border-white/5">
         <a href="/" className="text-xs text-gray-500 hover:text-gray-300 px-1">
           ← All servers
         </a>
