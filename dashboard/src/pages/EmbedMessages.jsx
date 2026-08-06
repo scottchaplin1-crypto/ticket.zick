@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Send, CheckCircle2, LayoutTemplate } from "lucide-react";
+import { Plus, Trash2, Send, CheckCircle2, LayoutTemplate, Bot as BotIcon } from "lucide-react";
 import { api } from "../api/client.js";
 import Card from "../components/Card.jsx";
 import Select from "../components/Select.jsx";
@@ -13,6 +13,7 @@ const BLANK = { name: "New Message", content: "", embeds: [] };
 export default function EmbedMessages({ guildId }) {
   const [messages, setMessages] = useState([]);
   const [channels, setChannels] = useState([]);
+  const [botProfile, setBotProfile] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,7 @@ export default function EmbedMessages({ guildId }) {
   useEffect(() => {
     load();
     api.get(`/api/guilds/${guildId}/channels`).then((res) => setChannels(res.data)).catch(() => setChannels([]));
+    api.get(`/api/bot-profile/guild/${guildId}`).then((res) => setBotProfile(res.data)).catch(() => setBotProfile(null));
   }, [guildId]);
 
   const textChannels = channels.filter((c) => c.type === 0);
@@ -246,28 +248,49 @@ export default function EmbedMessages({ guildId }) {
 
         <div className="sticky top-6">
           <Card title="Live preview">
-            <div className="bg-[#313338] rounded-lg p-4 space-y-3">
-              {form.content && <p className="text-gray-100 text-sm whitespace-pre-wrap">{form.content}</p>}
-              {form.embeds.map((embed) => (
-                <div key={embed.id} className="border-l-4 rounded bg-black/20 p-3" style={{ borderColor: embed.color || "#5865F2" }}>
-                  {embed.authorName && <p className="text-xs text-gray-300 font-medium mb-1">{embed.authorName}</p>}
-                  {embed.title && <p className="text-white font-bold text-sm">{embed.title}</p>}
-                  {embed.description && <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">{embed.description}</p>}
-                  {embed.fields?.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {embed.fields.map((f, i) => (
-                        <div key={i} className={f.inline ? "" : "col-span-2"}>
-                          <p className="text-xs font-semibold text-gray-200">{f.name}</p>
-                          <p className="text-xs text-gray-400">{f.value}</p>
-                        </div>
-                      ))}
-                    </div>
+            <div className="bg-[#313338] rounded-lg p-4">
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-full bg-surface3 shrink-0 overflow-hidden flex items-center justify-center">
+                  {botProfile?.avatarUrl ? (
+                    <img src={botProfile.avatarUrl} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+                  ) : (
+                    <BotIcon size={18} className="text-gray-500" />
                   )}
-                  {embed.imageUrl && <img src={embed.imageUrl} className="mt-2 rounded max-h-40 object-cover w-full" />}
-                  {embed.footerText && <p className="text-gray-500 text-xs mt-2">{embed.footerText}</p>}
                 </div>
-              ))}
-              {!form.content && form.embeds.length === 0 && <p className="text-sm text-gray-500 italic">Nothing to preview yet.</p>}
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-white text-sm">{botProfile?.nickname || "Ticket Zick"}</span>
+                    <span className="text-[10px] bg-blurple/90 px-1 rounded text-white font-medium leading-4">APP</span>
+                    <span className="text-xs text-gray-500">
+                      Today at {new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  </div>
+
+                  {form.content && <p className="text-gray-100 text-sm whitespace-pre-wrap -mt-1">{form.content}</p>}
+
+                  {form.embeds.map((embed) => (
+                    <div key={embed.id} className="border-l-4 rounded bg-black/20 p-3" style={{ borderColor: embed.color || "#5865F2" }}>
+                      {embed.authorName && <p className="text-xs text-gray-300 font-medium mb-1">{embed.authorName}</p>}
+                      {embed.title && <p className="text-white font-bold text-sm">{embed.title}</p>}
+                      {embed.description && <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">{embed.description}</p>}
+                      {embed.fields?.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {embed.fields.map((f, i) => (
+                            <div key={i} className={f.inline ? "" : "col-span-2"}>
+                              <p className="text-xs font-semibold text-gray-200">{f.name}</p>
+                              <p className="text-xs text-gray-400">{f.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {embed.imageUrl && <img src={embed.imageUrl} className="mt-2 rounded max-h-40 object-cover w-full" />}
+                      {embed.footerText && <p className="text-gray-500 text-xs mt-2">{embed.footerText}</p>}
+                    </div>
+                  ))}
+
+                  {!form.content && form.embeds.length === 0 && <p className="text-sm text-gray-500 italic">Nothing to preview yet.</p>}
+                </div>
+              </div>
             </div>
           </Card>
         </div>
