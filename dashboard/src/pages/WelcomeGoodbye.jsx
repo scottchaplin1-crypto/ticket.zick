@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
-import { LogIn, LogOut, Info } from "lucide-react";
+import { LogIn, LogOut, Info, ImageIcon } from "lucide-react";
 import { api } from "../api/client.js";
 import Card from "../components/Card.jsx";
 import Tooltip from "../components/Tooltip.jsx";
 import Toggle from "../components/Toggle.jsx";
 import Select from "../components/Select.jsx";
 import SaveStatus from "../components/SaveStatus.jsx";
+import ImageUrlField from "../components/ImageUrlField.jsx";
 import { useAutoSave } from "../hooks/useAutoSave.js";
 
 const PLACEHOLDER_HINT =
   "{user} mentions them, {username} is their plain name, {membercount} is the server's member count, {server} is the server name.";
+
+const BANNER_TITLE_HINT =
+  "{username}, {membercount}, and {server} all work here. Skip {user} for this one — it's drawn onto an image, so a Discord mention would just show up as raw text like <@123456789> instead of actually pinging them.";
 
 export default function WelcomeGoodbye({ guildId }) {
   const [form, setForm] = useState(null);
@@ -56,9 +60,56 @@ export default function WelcomeGoodbye({ guildId }) {
                     placeholder="Select a channel…"
                   />
                 </label>
+
+                <div className="pt-1 border-t border-white/5">
+                  <Toggle
+                    checked={form.bannerEnabled}
+                    onChange={(v) => setForm({ ...form, bannerEnabled: v })}
+                    label="Use a generated image banner"
+                  />
+                  {form.bannerEnabled && (
+                    <div className="space-y-3 mt-3">
+                      <ImageUrlField
+                        label="Background image"
+                        value={form.bannerImageUrl}
+                        onChange={(v) => setForm({ ...form, bannerImageUrl: v })}
+                        placeholder="Paste a wide background image link…"
+                      />
+                      <label className="block">
+                        <span className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                          Banner title text
+                          <Tooltip text={BANNER_TITLE_HINT}>
+                            <Info size={12} className="text-gray-600 hover:text-cyan-400 transition cursor-help" />
+                          </Tooltip>
+                        </span>
+                        <input className="input" value={form.bannerTitleTemplate} onChange={set("bannerTitleTemplate")} />
+                      </label>
+                      <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                        <ImageIcon size={12} className="shrink-0 mt-0.5" />
+                        Generates a real image — their avatar in a circle, this title, and the member count, drawn onto
+                        your background. If generation ever fails (bad image link, etc.), the plain message below posts
+                        instead automatically, so joiners are never left with nothing.
+                      </p>
+
+                      {form.bannerImageUrl && (
+                        <div className="rounded-lg overflow-hidden relative h-28 bg-surface3">
+                          <img src={form.bannerImageUrl} className="w-full h-full object-cover absolute inset-0" onError={(e) => (e.currentTarget.style.display = "none")} />
+                          <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center gap-1.5 px-3">
+                            <div className="w-9 h-9 rounded-full bg-surface2 border-2 border-white" />
+                            <p className="text-white text-xs font-bold text-center">
+                              {form.bannerTitleTemplate?.replace("{username}", "NewMember").replace("{membercount}", "42").replace("{server}", "Your Server")}
+                            </p>
+                            <p className="text-cyan-300 text-[10px]">Member #42</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <label className="block">
                   <span className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
-                    Message
+                    Message {form.bannerEnabled && <span className="text-gray-600">(fallback if the banner fails)</span>}
                     <Tooltip text={PLACEHOLDER_HINT}>
                       <Info size={12} className="text-gray-600 hover:text-cyan-400 transition cursor-help" />
                     </Tooltip>
