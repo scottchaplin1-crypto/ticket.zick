@@ -1,0 +1,420 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// One row per Discord user that has logged into the dashboard
+model User {
+  id            String   @id // discord user id
+  username      String
+  discriminator String?
+  avatar        String?
+  accessToken   String
+  refreshToken  String
+  createdAt     DateTime @default(now())
+}
+
+// One row per Discord server that has been set up with Ticket Zick
+model Guild {
+  id          String    @id // discord guild id
+  name        String
+  icon        String?
+  ownerId     String
+  createdAt   DateTime  @default(now())
+
+  panels      Panel[]
+  staffRoles  StaffRole[]
+  tickets     Ticket[]
+
+  quickAddEnabled Boolean @default(true)
+  quickAddCommand String  @default("$new") // e.g. "$new" — typed as "$new @user" in any channel
+  quickAddPanelId String? // which panel's settings (category, naming, transcript) quick-added tickets use
+
+  welcomeConfig       WelcomeConfig?
+  reactionRolePanels  ReactionRolePanel[]
+  customCommands      CustomCommand[]
+  botProfile          BotProfile?
+  embedMessages       EmbedMessage[]
+  achievements        AchievementDefinition[]
+  osrsSyncConfig      OsrsSyncConfig?
+  moderationConfig    ModerationConfig?
+  autoMessages        AutoMessage[]
+  economyConfig       EconomyConfig?
+  economyItems        EconomyItem[]
+}
+
+// Fully customisable dashboard + bot embed branding, per guild
+// (Branding model removed — welcomeMessage/color/footer moved to be per-panel
+// instead of one guild-wide setting; brandName/logoUrl/darkMode were never
+// actually used anywhere and were removed along with it.)
+
+// A ticket panel is the embed+button posted in a channel that users click to open a ticket.
+// A guild can have multiple panels (e.g. "General Support", "Billing", "Report a Bug")
+model Panel {
+  id                String   @id @default(cuid())
+  guild             Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId           String
+
+  name              String   // internal name shown in dashboard
+  channelId         String?  // channel the panel embed is posted in
+  messageId         String?  // message id of the posted panel (for edits)
+
+  embedTitle        String   @default("Need help?")
+  embedDescription  String   @default("Click the button below to open a ticket.")
+  embedColor        String   @default("#5865F2")
+  embedImageUrl     String?
+  embedThumbnailUrl String?
+
+  buttonLabel       String   @default("Open Ticket")
+  buttonEmoji       String   @default("🎫")
+  buttonStyle       String   @default("Primary") // Primary, Secondary, Success, Danger
+
+  ticketCategoryId  String?  // discord category channel id new ticket channels go under
+  namingPattern     String   @default("ticket-{number}") // {number} {username}
+  maxOpenPerUser    Int      @default(1)
+
+  pingRoleIds       String   @default("[]") // JSON array of role ids to ping/add on new ticket
+  tagStaffOnOpen    Boolean  @default(true) // @-mention configured Staff Roles when a ticket opens (they always get channel access regardless — this only controls the ping)
+  accessRoleIds     String   @default("[]") // JSON array of role ids — if non-empty, ONLY these roles (not the full global Staff Roles list) get access to this panel's tickets
+
+  openAddRoleIds     String  @default("[]") // JSON array — roles granted to the ticket opener the moment their ticket opens
+  closeAddRoleIds    String  @default("[]") // JSON array — roles granted to the ticket opener when their ticket closes (e.g. "approved" for an application panel)
+  closeRemoveRoleIds String  @default("[]") // JSON array — roles removed from the ticket opener when their ticket closes (e.g. a "pending" role)
+
+  welcomeMessage    String   @default("Thanks for reaching out! Support will be with you shortly.") // shown inside the ticket once it opens — separate from the embed above, which is the panel announcement shown before someone clicks
+  footerText        String   @default("Powered by Ticket Zick")
+
+  questionsEnabled  Boolean  @default(false)
+  questions         String   @default("[]") // JSON array of { id, label, style, required, placeholder }, max 5 (Discord modal limit)
+
+  transcriptEnabled     Boolean @default(true)
+  transcriptDestination String  @default("dm") // "dm", "channel", or "both"
+  transcriptChannelId   String? // required if destination is "channel" or "both"
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tickets           Ticket[]
+}
+
+model StaffRole {
+  id       String @id @default(cuid())
+  guild    Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId  String
+  roleId   String
+  roleName String
+
+  @@unique([guildId, roleId])
+}
+
+model Ticket {
+  id             String    @id @default(cuid())
+  guild          Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId        String
+  panel          Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  panelId        String
+
+  number         Int
+  channelId      String
+  openerId       String
+  openerUsername String
+  claimedById    String?
+
+  status         String    @default("open") // open, claimed, closed
+  transcriptUrl  String?
+
+  createdAt      DateTime  @default(now())
+  closedAt       DateTime?
+}
+
+// Phase 1 of the "MEE6 replacement" build — welcome/goodbye, reaction roles, custom commands.
+
+model WelcomeConfig {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String @unique
+
+  welcomeEnabled   Boolean @default(false)
+  welcomeChannelId String?
+  welcomeMessage   String  @default("Welcome {user} to {server}! We're now {membercount} members strong. 🎉")
+
+  autoRoleEnabled Boolean @default(false)
+  autoRoleIds     String  @default("[]") // JSON array — granted to everyone the moment they join. For servers using Discord's own "Apply to Join", this is effectively "roles for approved applicants", since Discord doesn't add someone as a real member until staff approve them.
+
+  stickerButtonEnabled Boolean @default(false) // shows a button under the welcome message — any member can click it to post a random real sticker from this server's own sticker pack
+
+  bannerEnabled       Boolean @default(false)
+  bannerImageUrl      String? // background image for the generated banner — optional; leave blank to use a flat color instead
+  bannerBackgroundColor String @default("#2b2d31") // used when no image is set, or as a fallback if the image fails to load
+  bannerTextColor       String @default("#ffffff")
+  bannerAccentColor     String @default("#5ee6c8") // color of the "Member #N" line
+  bannerOverlayOpacity  Int    @default(45) // 0-100, a dark wash applied over the background image so text stays readable — ignored when there's no image
+  bannerTitleTemplate String  @default("{username} just joined the server!")
+
+  goodbyeEnabled   Boolean @default(false)
+  goodbyeChannelId String?
+  goodbyeMessage   String  @default("{username} has left {server}. We're now {membercount} members.")
+}
+
+// A message with emoji-reaction-to-role mappings. mappings is JSON:
+// [{ emoji, roleId, label }]. mode "multiple" lets people hold any combination;
+// "single" removes their other roles from this same panel when they pick a new one.
+model ReactionRolePanel {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  name        String @default("New Reaction Roles")
+  title       String @default("Choose your roles")
+  description String @default("React below to get a role!")
+  color       String @default("#5865F2")
+
+  channelId String?
+  messageId String?
+
+  mode     String @default("multiple") // "multiple" | "single"
+  mappings String @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A word/phrase that, typed verbatim in any channel, makes the bot post a
+// pre-built embed — MEE6's "custom commands" feature.
+model CustomCommand {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  trigger           String
+  embedTitle        String  @default("")
+  embedDescription  String  @default("")
+  embedColor        String  @default("#5865F2")
+  embedImageUrl     String?
+  embedThumbnailUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, trigger])
+}
+
+// Per-server bot identity — Discord lets a bot have a different avatar, banner,
+// bio, and nickname in each server it's in (via the guild member profile), so
+// this is scoped to one Guild, same as everything else here — changing it never
+// affects how the bot looks in any other server.
+model BotProfile {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String @unique
+
+  nickname  String?
+  avatarUrl String?
+  bannerUrl String?
+  bio       String  @default("")
+
+  updatedAt DateTime @updatedAt
+}
+
+// A saved, editable message — plain text plus any number of embeds, sent by the
+// bot itself (no webhooks) to whichever channel you pick. Re-sending to the same
+// channel edits the existing message in place instead of posting a duplicate.
+model EmbedMessage {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  name    String @default("New Message") // internal label, dashboard only
+  content String @default("")            // plain text, shown above the embeds
+  embeds  String @default("[]")          // JSON array of embed objects
+
+  channelId String?
+  messageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Achievements — custom, server-defined milestones. Bot-side activity (messages,
+// reactions, threads) increments MemberStat counters; whenever a counter crosses
+// one of an achievement's tier thresholds, UnlockedTier records it (its unique
+// constraint is what stops the same tier being "unlocked" twice) and the bot
+// announces it + grants that tier's role, if one's set.
+
+model AchievementDefinition {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  name        String
+  description String  @default("")
+  emoji       String  @default("🏆")
+  color       String  @default("#FEE75C")
+  statType    String  // "messages" | "reactions" | "threads" | "boosts" | "roles_received"
+  enabled     Boolean @default(true)
+
+  announceChannelId String?
+  tiers             String  @default("[]") // JSON array of { name, threshold, roleId }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MemberStat {
+  id       String @id @default(cuid())
+  guildId  String
+  userId   String
+  statType String
+  count    Int    @default(0)
+
+  @@unique([guildId, userId, statType])
+}
+
+model UnlockedTier {
+  id            String   @id @default(cuid())
+  guildId       String
+  userId        String
+  achievementId String
+  tier          String
+  unlockedAt    DateTime @default(now())
+
+  @@unique([guildId, userId, achievementId, tier])
+}
+
+// OSRS clan rank sync, via Wise Old Man's public API (wiseoldman.net) — a
+// well-established OSRS tracking service most clans already use. Members link
+// their in-game name once via a button + popup form; their Discord role then
+// tracks their in-game clan rank automatically, checked periodically.
+
+model OsrsSyncConfig {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String @unique
+
+  enabled      Boolean @default(true)
+  womGroupId   String
+  womGroupName String? // cached display name, fetched when you save, just so you can confirm it's the right group
+
+  linkChannelId String?
+  linkMessageId String?
+  rankMappings  String  @default("[]") // JSON array of { womRole, roleId }
+
+  updatedAt DateTime @updatedAt
+}
+
+model OsrsLink {
+  id        String  @id @default(cuid())
+  guildId   String
+  discordId String
+  rsn       String
+  lastRole  String? // last known WOM rank slug, so periodic sync can tell if it changed
+
+  @@unique([guildId, discordId])
+}
+
+// Moderation — ban/kick commands (accepting a mention or a raw Discord ID, so you
+// can act on someone who isn't even in the server), auto-ban of new accounts under
+// a configurable age, and a mod-log channel recording every action.
+
+model ModerationConfig {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String @unique
+
+  modLogChannelId String?
+
+  autoBanEnabled    Boolean @default(false)
+  autoBanMinAgeDays Int     @default(7)
+
+  updatedAt DateTime @updatedAt
+}
+
+model ModerationCase {
+  id          String   @id @default(cuid())
+  guildId     String
+  action      String   // "ban" | "kick" | "autoban"
+  targetId    String
+  targetTag   String?
+  moderatorId String?  // null for autoban (system-triggered, no human moderator)
+  reason      String?
+  createdAt   DateTime @default(now())
+}
+
+// Auto Message — a saved message (same content+embeds shape as Embed Messages)
+// that reposts itself automatically on a repeating interval, entirely in the
+// background (a periodic sweep on the server, same pattern as OSRS sync).
+model AutoMessage {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  name    String @default("New Auto Message")
+  content String @default("")
+  embeds  String @default("[]")
+
+  channelId       String
+  intervalMinutes Int     @default(60)
+  enabled         Boolean @default(true)
+  lastSentAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Economy — a custom server currency, a store staff stock with custom items, and
+// a collection log announcing every purchase. Earning methods (messages, voice
+// time, reactions, etc.) are a separate future layer on top of this.
+
+model EconomyConfig {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String @unique
+
+  enabled       Boolean @default(true)
+  currencyName  String  @default("Coins")
+  currencyEmoji String  @default("🪙") // plain unicode or a custom server emoji ref ("name:id"), same format as everywhere else emojis are picked
+
+  collectionLogChannelId String?
+
+  updatedAt DateTime @updatedAt
+}
+
+model EconomyBalance {
+  id      String @id @default(cuid())
+  guildId String
+  userId  String
+  balance Int    @default(0)
+
+  @@unique([guildId, userId])
+}
+
+model EconomyItem {
+  id      String @id @default(cuid())
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildId String
+
+  name        String
+  description String  @default("")
+  emoji       String  @default("🎁")
+  price       Int
+  limited     Boolean @default(false) // once someone owns a limited item, they can't buy it again — for collection-style items
+  roleId      String? // optional role granted automatically on purchase
+  enabled     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EconomyPurchase {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  itemId      String
+  itemName    String // cached at time of purchase, in case the item is later renamed/deleted
+  price       Int
+  purchasedAt DateTime @default(now())
+}
