@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "gg sans", "Segoe UI", Roboto, sans-serif;
+  background-color: #1e1f22;
+  background-image:
+    radial-gradient(700px circle at 8% -8%, rgba(34, 211, 238, 0.12), transparent 55%),
+    radial-gradient(600px circle at 100% 0%, rgba(34, 211, 238, 0.14), transparent 55%),
+    radial-gradient(500px circle at 50% 100%, rgba(88, 101, 242, 0.05), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.input {
+  @apply w-full bg-surface3 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-transparent hover:border-white/20;
+}
+
+/* Reusable soft cyan glow — used on primary buttons and highlighted cards
+   throughout the dashboard, instead of leaning on blurple everywhere. */
+.glow-cyan {
+  box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+  transition: box-shadow 150ms ease, transform 150ms ease;
+}
+.glow-cyan:hover {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+}
